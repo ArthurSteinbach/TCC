@@ -1,0 +1,14 @@
+# Pasta de build do Maven (gerada automaticamente ao compilar)
+target/
+
+# Banco de dados local (dado de teste, não faz sentido versionar)
+despensa.db
+
+# Arquivos de configuração de IDE que não interessam ao projeto em si
+.vscode/
+*.iml
+.idea/
+
+# Arquivos temporários do sistema operacional
+.DS_Store
+Thumbs.db
