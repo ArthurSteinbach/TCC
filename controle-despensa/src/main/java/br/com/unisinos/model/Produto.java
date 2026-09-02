@@ -72,8 +72,12 @@ public class Produto {
         this.dataCadastro = dataCadastro;
     }
 
+    /**
+     * Usado tanto para exibição em logs quanto como texto exibido nos
+     * componentes visuais (ex: JComboBox na tela de novo lote).
+     */
     @Override
     public String toString() {
-        return "Produto{id=" + id + ", codigoBarras='" + codigoBarras + "', nome='" + nome + "'}";
+        return nome + " (" + codigoBarras + ")";
     }
 }
