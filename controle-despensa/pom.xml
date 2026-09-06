@@ -26,6 +26,14 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Testes automatizados (JUnit 5) -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Banco de Dados Local (SQLite) -->
     <dependency>
       <groupId>org.xerial</groupId>
@@ -79,7 +87,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
+          <version>3.2.5</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>

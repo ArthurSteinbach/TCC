@@ -11,42 +11,48 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Responsável pela conexão com o banco SQLite local (despensa.db).
+ * Responsável pela conexão com o banco SQLite local e pela inicialização
+ * do schema (tabelas produtos e lotes).
  *
- * Cada chamada de {@link #getConnection()} devolve uma conexão nova, que o
- * chamador deve fechar (idealmente via try-with-resources). A criação do
- * schema (tabelas produtos e lotes) é feita uma única vez, chamando
- * {@link #inicializar()} no arranque da aplicação.
+ * getConnection() devolve uma conexão nova a cada chamada (padrão comum
+ * para SQLite em apps desktop de usuário único); quem chama é
+ * responsável por fechar, idealmente via try-with-resources — é assim
+ * que todos os DAOs já usam.
+ *
+ * inicializar() deve ser chamado uma única vez, no início da aplicação
+ * (ou no início de cada classe de teste), para criar as tabelas.
  */
 public final class DatabaseManager {
 
-    private static final String DB_URL = "jdbc:sqlite:despensa.db";
+    private static final String DB_URL_PREFIX = "jdbc:sqlite:";
 
     private DatabaseManager() {
         // classe utilitária, não deve ser instanciada
     }
 
     /**
-     * Abre e devolve uma nova conexão com o banco, já com as foreign keys
-     * habilitadas. O chamador é responsável por fechá-la.
+     * Caminho do arquivo do banco. Pode ser sobrescrito via propriedade
+     * de sistema "despensa.db.path" — é assim que os testes automatizados
+     * rodam num banco temporário, sem misturar dados com o despensa.db
+     * real usado pela aplicação.
      */
+    private static String obterCaminhoBanco() {
+        return System.getProperty("despensa.db.path", "despensa.db");
+    }
+
     public static Connection getConnection() throws SQLException {
-        Connection conn = DriverManager.getConnection(DB_URL);
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("PRAGMA foreign_keys = ON;");
-        }
-        return conn;
+        Connection connection = DriverManager.getConnection(DB_URL_PREFIX + obterCaminhoBanco());
+        connection.createStatement().execute("PRAGMA foreign_keys = ON;");
+        return connection;
     }
 
     /**
-     * Executa o schema.sql (localizado em src/main/resources) para criar as
-     * tabelas caso ainda não existam. Usa CREATE TABLE IF NOT EXISTS, então é
-     * seguro chamar em toda inicialização, mas deve ser chamado apenas uma
-     * vez, no início do App.main().
+     * Lê o schema.sql (em src/main/resources) e roda os
+     * CREATE TABLE IF NOT EXISTS. Seguro de chamar mais de uma vez.
      */
     public static void inicializar() {
-        try (InputStream is = DatabaseManager.class.getClassLoader()
-                .getResourceAsStream("schema.sql")) {
+        try (Connection conn = getConnection();
+             InputStream is = DatabaseManager.class.getClassLoader().getResourceAsStream("schema.sql")) {
 
             if (is == null) {
                 throw new IllegalStateException(
@@ -55,9 +61,7 @@ public final class DatabaseManager {
 
             String sql = lerConteudo(is);
 
-            try (Connection conn = getConnection();
-                 Statement stmt = conn.createStatement()) {
-                // schema.sql pode ter múltiplos comandos separados por ';'
+            try (Statement stmt = conn.createStatement()) {
                 for (String comando : sql.split(";")) {
                     String trimmed = comando.trim();
                     if (!trimmed.isEmpty()) {
