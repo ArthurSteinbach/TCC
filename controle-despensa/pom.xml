@@ -51,6 +51,13 @@
       <artifactId>webcam-capture</artifactId>
       <version>0.3.12</version>
     </dependency>
+
+    <!-- Parsing de JSON (integração com a API Open Food Facts) -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20240303</version>
+    </dependency>
   </dependencies>
 
   <build>

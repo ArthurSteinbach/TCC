@@ -23,6 +23,7 @@ public class Lote {
     // alertas), para já entregar o nome e código de barras prontos pra tela.
     private String nomeProduto;
     private String codigoBarrasProduto;
+    private String unidadeMedidaProduto;
 
     public Lote() {
     }
@@ -112,6 +113,14 @@ public class Lote {
 
     public void setCodigoBarrasProduto(String codigoBarrasProduto) {
         this.codigoBarrasProduto = codigoBarrasProduto;
+    }
+
+    public String getUnidadeMedidaProduto() {
+        return unidadeMedidaProduto;
+    }
+
+    public void setUnidadeMedidaProduto(String unidadeMedidaProduto) {
+        this.unidadeMedidaProduto = unidadeMedidaProduto;
     }
 
     /** Valor financeiro deste lote (quantidade x preço unitário). */

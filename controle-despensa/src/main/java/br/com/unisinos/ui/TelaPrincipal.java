@@ -37,11 +37,18 @@ public class TelaPrincipal extends JFrame {
     public TelaPrincipal() {
         super("Controle de Despensa \u2014 FEFO");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(820, 500);
+        setSize(860, 560);
         setLocationRelativeTo(null);
 
         montarLayout();
         carregarDados();
+
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowOpened(java.awt.event.WindowEvent e) {
+                verificarAlertaInicial();
+            }
+        });
     }
 
     private void montarLayout() {
@@ -59,24 +66,42 @@ public class TelaPrincipal extends JFrame {
 
         JPanel painelInferior = new JPanel(new BorderLayout());
 
-        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel painelBotoesLinha1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel painelBotoesLinha2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
         JButton btnNovoProduto = new JButton("Novo Produto");
         JButton btnNovoLote = new JButton("Novo Lote");
+        JButton btnEditar = new JButton("Editar");
+        JButton btnAtualizar = new JButton("Atualizar");
+
         JButton btnConsumir = new JButton("Marcar como Consumido");
         JButton btnDescartar = new JButton("Marcar como Descartado (vencido)");
-        JButton btnAtualizar = new JButton("Atualizar");
+        JButton btnAlertas = new JButton("Alertas");
+        JButton btnRelatorio = new JButton("Relatório de Perdas");
 
         btnNovoProduto.addActionListener(e -> abrirDialogNovoProduto());
         btnNovoLote.addActionListener(e -> abrirDialogNovoLote());
+        btnEditar.addActionListener(e -> editarSelecionado());
+        btnAtualizar.addActionListener(e -> carregarDados());
         btnConsumir.addActionListener(e -> darBaixaSelecionado(true));
         btnDescartar.addActionListener(e -> darBaixaSelecionado(false));
-        btnAtualizar.addActionListener(e -> carregarDados());
+        btnAlertas.addActionListener(e -> abrirAlertas());
+        btnRelatorio.addActionListener(e -> abrirRelatorioPerdas());
 
-        painelBotoes.add(btnNovoProduto);
-        painelBotoes.add(btnNovoLote);
-        painelBotoes.add(btnConsumir);
-        painelBotoes.add(btnDescartar);
-        painelBotoes.add(btnAtualizar);
+        painelBotoesLinha1.add(btnNovoProduto);
+        painelBotoesLinha1.add(btnNovoLote);
+        painelBotoesLinha1.add(btnEditar);
+        painelBotoesLinha1.add(btnAtualizar);
+
+        painelBotoesLinha2.add(btnConsumir);
+        painelBotoesLinha2.add(btnDescartar);
+        painelBotoesLinha2.add(btnAlertas);
+        painelBotoesLinha2.add(btnRelatorio);
+
+        JPanel painelBotoes = new JPanel();
+        painelBotoes.setLayout(new javax.swing.BoxLayout(painelBotoes, javax.swing.BoxLayout.Y_AXIS));
+        painelBotoes.add(painelBotoesLinha1);
+        painelBotoes.add(painelBotoesLinha2);
 
         labelPerdaTotal.setBorder(BorderFactory.createEmptyBorder(5, 10, 10, 10));
         labelPerdaTotal.setFont(labelPerdaTotal.getFont().deriveFont(Font.BOLD));
@@ -97,6 +122,19 @@ public class TelaPrincipal extends JFrame {
         } catch (SQLException e) {
             mostrarErro("Erro ao carregar dados do banco: " + e.getMessage());
         }
+    }
+
+    private void editarSelecionado() {
+        int linha = tabela.getSelectedRow();
+        if (linha == -1) {
+            JOptionPane.showMessageDialog(this, "Selecione um item na lista primeiro.",
+                    "Nenhum item selecionado", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Lote lote = tableModel.getLoteNaLinha(linha);
+        DialogEditarLote dialog = new DialogEditarLote(this, lote, loteService, this::carregarDados);
+        dialog.setVisible(true);
     }
 
     private void darBaixaSelecionado(boolean consumido) {
@@ -150,6 +188,31 @@ public class TelaPrincipal extends JFrame {
 
         DialogNovoLote dialog = new DialogNovoLote(this, produtoService, loteService, this::carregarDados);
         dialog.setVisible(true);
+    }
+
+    private void abrirAlertas() {
+        DialogAlertas dialog = new DialogAlertas(this, loteService);
+        dialog.setVisible(true);
+    }
+
+    private void abrirRelatorioPerdas() {
+        DialogRelatorioPerdas dialog = new DialogRelatorioPerdas(this, loteService);
+        dialog.setVisible(true);
+    }
+
+    /** Mostra um aviso ao abrir o sistema, se houver itens vencendo em breve. */
+    private void verificarAlertaInicial() {
+        try {
+            int quantidade = loteService.listarAlertaVencimento().size();
+            if (quantidade > 0) {
+                JOptionPane.showMessageDialog(this,
+                        "Você tem " + quantidade + " item(ns) vencendo em breve ou já vencidos.\n"
+                                + "Clique em \"Alertas\" para ver a lista completa.",
+                        "Alerta de Vencimento", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (SQLException e) {
+            // Não interrompe a abertura do sistema por causa disso.
+        }
     }
 
     private void mostrarErro(String mensagem) {

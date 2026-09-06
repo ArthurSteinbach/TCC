@@ -58,6 +58,33 @@ public class LoteService {
         return loteDAO.inserir(lote);
     }
 
+    /**
+     * Edita quantidade, preço e validade de um lote já existente.
+     * Diferente do cadastro, aqui NÃO bloqueamos data de validade no
+     * passado — o usuário pode estar apenas corrigindo o preço de um
+     * item que já está vencido, sem querer mexer no status dele.
+     */
+    public void editar(int loteId, double quantidade, double precoUnitario, LocalDate dataValidade)
+            throws SQLException {
+
+        if (quantidade <= 0) {
+            throw new ValidacaoException("A quantidade deve ser maior que zero.");
+        }
+        if (precoUnitario < 0) {
+            throw new ValidacaoException("O preço não pode ser negativo.");
+        }
+        if (dataValidade == null) {
+            throw new ValidacaoException("A data de validade é obrigatória.");
+        }
+
+        Lote lote = new Lote();
+        lote.setId(loteId);
+        lote.setQuantidade(quantidade);
+        lote.setPrecoUnitario(precoUnitario);
+        lote.setDataValidade(dataValidade);
+        loteDAO.atualizar(lote);
+    }
+
     /** Lista os lotes ativos ordenados pela regra FEFO (validade mais próxima primeiro). */
     public List<Lote> listarAtivosFEFO() throws SQLException {
         return loteDAO.listarAtivosFEFO();
@@ -69,6 +96,11 @@ public class LoteService {
      */
     public List<Lote> listarAlertaVencimento() throws SQLException {
         return loteDAO.listarVencendoEm(Constantes.DIAS_ALERTA_VENCIMENTO);
+    }
+
+    /** Lista os lotes descartados por vencimento, para o relatório de perdas. */
+    public List<Lote> listarDescartados() throws SQLException {
+        return loteDAO.listarDescartados();
     }
 
     /** Dá baixa por consumo normal: o usuário utilizou o item. */

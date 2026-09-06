@@ -29,10 +29,13 @@ public class ProdutoService {
 
     /**
      * Cadastra um novo produto, validando os campos obrigatórios e
-     * impedindo duplicidade de código de barras.
+     * impedindo duplicidade de código de barras. A unidade de medida
+     * não é mais uma escolha do usuário — internamente, todo produto é
+     * tratado como "UN" (o sistema conta pacotes/frascos, não peso ou
+     * volume, já que cada produto tem tamanho fixo definido pelo seu
+     * próprio código de barras).
      */
-    public Produto cadastrar(String codigoBarras, String nome, String categoria, String unidadeMedida)
-            throws SQLException {
+    public Produto cadastrar(String codigoBarras, String nome, String categoria) throws SQLException {
 
         if (codigoBarras == null || codigoBarras.isBlank()) {
             throw new ValidacaoException("O código de barras é obrigatório.");
@@ -47,7 +50,7 @@ public class ProdutoService {
                     "Já existe um produto cadastrado com este código de barras: " + existente.get().getNome());
         }
 
-        Produto produto = new Produto(codigoBarras.trim(), nome.trim(), categoria, unidadeMedida);
+        Produto produto = new Produto(codigoBarras.trim(), nome.trim(), categoria, "UN");
         return produtoDAO.inserir(produto);
     }
 

@@ -29,7 +29,7 @@ public class TesteFEFO {
         System.out.println("========== PARTE 1: caminho feliz (dados válidos) ==========\n");
 
         String codigoTeste = "TESTE-" + System.currentTimeMillis();
-        Produto arroz = produtoService.cadastrar(codigoTeste, "Arroz Tio João 5kg", "Grãos", "UN");
+        Produto arroz = produtoService.cadastrar(codigoTeste, "Arroz Tio João 5kg", "Grãos");
         System.out.println("Produto cadastrado: " + arroz);
 
         Lote loteA = loteService.cadastrar(arroz.getId(), 2, 25.90, LocalDate.now().plusDays(30));
@@ -70,7 +70,7 @@ public class TesteFEFO {
 
         // Caso 2: tentar cadastrar um produto com código de barras já existente
         try {
-            produtoService.cadastrar(codigoTeste, "Outro Nome Qualquer", "Outra Categoria", "UN");
+            produtoService.cadastrar(codigoTeste, "Outro Nome Qualquer", "Outra Categoria");
             System.out.println("[FALHOU] O sistema deveria ter recusado um código de barras duplicado, mas aceitou.");
         } catch (ValidacaoException e) {
             System.out.println("[OK] Código de barras duplicado recusado corretamente. Mensagem: \"" + e.getMessage() + "\"");

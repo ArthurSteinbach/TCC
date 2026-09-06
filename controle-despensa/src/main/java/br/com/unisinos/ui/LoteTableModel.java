@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class LoteTableModel extends AbstractTableModel {
 
-    private static final String[] COLUNAS = {"Produto", "Qtd.", "Validade", "Dias p/ vencer", "Valor (R$)"};
+    private static final String[] COLUNAS = {"Produto", "Quantidade", "Validade", "Dias p/ vencer", "Valor (R$)"};
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private List<Lote> lotes = new ArrayList<>();
@@ -28,6 +28,14 @@ public class LoteTableModel extends AbstractTableModel {
 
     public Lote getLoteNaLinha(int linha) {
         return lotes.get(linha);
+    }
+
+    /** Mostra "3" em vez de "3.0" quando a quantidade é um número inteiro. */
+    private String formatarQuantidade(double quantidade) {
+        if (quantidade == Math.floor(quantidade)) {
+            return String.valueOf((long) quantidade);
+        }
+        return String.valueOf(quantidade);
     }
 
     @Override
@@ -50,7 +58,7 @@ public class LoteTableModel extends AbstractTableModel {
         Lote lote = lotes.get(linha);
         return switch (coluna) {
             case 0 -> lote.getNomeProduto();
-            case 1 -> lote.getQuantidade();
+            case 1 -> formatarQuantidade(lote.getQuantidade());
             case 2 -> lote.getDataValidade().format(FORMATO_DATA);
             case 3 -> ChronoUnit.DAYS.between(LocalDate.now(), lote.getDataValidade());
             case 4 -> String.format("%.2f", lote.getValorTotal());

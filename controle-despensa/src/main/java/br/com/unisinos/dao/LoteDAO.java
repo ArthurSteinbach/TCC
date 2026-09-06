@@ -44,13 +44,29 @@ public class LoteDAO {
         return lote;
     }
 
+    /** Atualiza quantidade, preço e validade de um lote já existente. */
+    public void atualizar(Lote lote) throws SQLException {
+        String sql = "UPDATE lotes SET quantidade = ?, preco_unitario = ?, data_validade = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDouble(1, lote.getQuantidade());
+            stmt.setDouble(2, lote.getPrecoUnitario());
+            stmt.setString(3, lote.getDataValidade().toString());
+            stmt.setInt(4, lote.getId());
+            stmt.executeUpdate();
+        }
+    }
+
     /**
      * Retorna todos os lotes ATIVOS ordenados pela regra FEFO: data de
      * validade mais próxima primeiro. É esta lista que deve ser exibida
      * em destaque na tela principal do sistema.
      */
     public List<Lote> listarAtivosFEFO() throws SQLException {
-        String sql = "SELECT l.*, p.nome AS nome_produto, p.codigo_barras AS codigo_barras_produto "
+        String sql = "SELECT l.*, p.nome AS nome_produto, p.codigo_barras AS codigo_barras_produto, "
+                + "p.unidade_medida AS unidade_medida_produto "
                 + "FROM lotes l "
                 + "JOIN produtos p ON p.id = l.produto_id "
                 + "WHERE l.status = 'ATIVO' "
@@ -64,7 +80,8 @@ public class LoteDAO {
      * com Constantes.DIAS_ALERTA_VENCIMENTO.
      */
     public List<Lote> listarVencendoEm(int dias) throws SQLException {
-        String sql = "SELECT l.*, p.nome AS nome_produto, p.codigo_barras AS codigo_barras_produto "
+        String sql = "SELECT l.*, p.nome AS nome_produto, p.codigo_barras AS codigo_barras_produto, "
+                + "p.unidade_medida AS unidade_medida_produto "
                 + "FROM lotes l "
                 + "JOIN produtos p ON p.id = l.produto_id "
                 + "WHERE l.status = 'ATIVO' AND date(l.data_validade) <= date(?) "
@@ -89,6 +106,20 @@ public class LoteDAO {
             }
         }
         return lotes;
+    }
+
+    /**
+     * Retorna todos os lotes descartados por vencimento, do mais recente
+     * para o mais antigo — base do relatório de perdas financeiras.
+     */
+    public List<Lote> listarDescartados() throws SQLException {
+        String sql = "SELECT l.*, p.nome AS nome_produto, p.codigo_barras AS codigo_barras_produto, "
+                + "p.unidade_medida AS unidade_medida_produto "
+                + "FROM lotes l "
+                + "JOIN produtos p ON p.id = l.produto_id "
+                + "WHERE l.status = 'DESCARTADO' "
+                + "ORDER BY l.data_baixa DESC";
+        return executarConsultaLotes(sql, null);
     }
 
     /** Dá baixa manual: o usuário consumiu o item normalmente. */
@@ -144,6 +175,7 @@ public class LoteDAO {
         l.setDataBaixa(rs.getString("data_baixa"));
         l.setNomeProduto(rs.getString("nome_produto"));
         l.setCodigoBarrasProduto(rs.getString("codigo_barras_produto"));
+        l.setUnidadeMedidaProduto(rs.getString("unidade_medida_produto"));
         return l;
     }
 }
