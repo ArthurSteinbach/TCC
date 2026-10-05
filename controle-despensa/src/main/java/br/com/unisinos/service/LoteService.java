@@ -8,6 +8,7 @@ import br.com.unisinos.util.Constantes;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +62,14 @@ public class LoteService {
             cadastrados.add(loteDAO.inserir(lote));
         }
         return cadastrados;
+    }
+
+    public static Map<LocalDate, Integer> agruparPorValidade(List<LocalDate> validadesDosItens) {
+        Map<LocalDate, Integer> quantidadePorValidade = new LinkedHashMap<>();
+        for (LocalDate validade : validadesDosItens) {
+            quantidadePorValidade.merge(validade, 1, Integer::sum);
+        }
+        return quantidadePorValidade;
     }
 
     private void validarCadastro(Integer produtoId, double quantidade, double precoUnitario, LocalDate dataValidade) {

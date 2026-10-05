@@ -13,7 +13,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -152,6 +154,121 @@ class LoteServiceTest {
         assertEquals(4, atualizado.getQuantidade());
         assertEquals(25.0, atualizado.getPrecoUnitario());
         assertEquals(novaValidade, atualizado.getDataValidade());
+    }
+
+    @Test
+    void cadastrarPorValidade_deveCriarUmLotePorDataComAQuantidadeDeCadaUma() throws SQLException {
+        Map<LocalDate, Integer> quantidadePorValidade = new LinkedHashMap<>();
+        quantidadePorValidade.put(LocalDate.now().plusDays(20), 3);
+        quantidadePorValidade.put(LocalDate.now().plusDays(5), 2);
+
+        List<Lote> cadastrados = loteService.cadastrarPorValidade(produtoDeTeste.getId(), quantidadePorValidade, 8.0);
+
+        List<Lote> lotesDoProduto = lotesAtivosDoProdutoDeTeste();
+
+        assertEquals(2, cadastrados.size());
+        assertEquals(2, lotesDoProduto.size());
+        assertEquals(LocalDate.now().plusDays(5), lotesDoProduto.get(0).getDataValidade());
+        assertEquals(2, lotesDoProduto.get(0).getQuantidade());
+        assertEquals(LocalDate.now().plusDays(20), lotesDoProduto.get(1).getDataValidade());
+        assertEquals(3, lotesDoProduto.get(1).getQuantidade());
+    }
+
+    @Test
+    void cadastrarPorValidade_deveAplicarOMesmoPrecoATodosOsLotes() throws SQLException {
+        Map<LocalDate, Integer> quantidadePorValidade = new LinkedHashMap<>();
+        quantidadePorValidade.put(LocalDate.now().plusDays(3), 1);
+        quantidadePorValidade.put(LocalDate.now().plusDays(9), 1);
+        quantidadePorValidade.put(LocalDate.now().plusDays(15), 4);
+
+        loteService.cadastrarPorValidade(produtoDeTeste.getId(), quantidadePorValidade, 6.75);
+
+        List<Lote> lotesDoProduto = lotesAtivosDoProdutoDeTeste();
+
+        assertEquals(3, lotesDoProduto.size());
+        assertTrue(lotesDoProduto.stream().allMatch(l -> l.getPrecoUnitario() == 6.75));
+    }
+
+    @Test
+    void cadastrarPorValidade_comUmaDataVencida_naoDeveSalvarNenhumLote() throws SQLException {
+        Map<LocalDate, Integer> quantidadePorValidade = new LinkedHashMap<>();
+        quantidadePorValidade.put(LocalDate.now().plusDays(10), 2);
+        quantidadePorValidade.put(LocalDate.now().minusDays(1), 1);
+
+        assertThrows(ValidacaoException.class, () ->
+                loteService.cadastrarPorValidade(produtoDeTeste.getId(), quantidadePorValidade, 5.0));
+
+        assertTrue(lotesAtivosDoProdutoDeTeste().isEmpty());
+    }
+
+    @Test
+    void cadastrarPorValidade_semNenhumaValidade_deveLancarValidacaoException() {
+        assertThrows(ValidacaoException.class, () ->
+                loteService.cadastrarPorValidade(produtoDeTeste.getId(), new LinkedHashMap<>(), 5.0));
+    }
+
+    @Test
+    void agruparPorValidade_deveSomarAsUnidadesComAMesmaValidade() {
+        LocalDate validadeA = LocalDate.now().plusDays(4);
+        LocalDate validadeB = LocalDate.now().plusDays(12);
+
+        Map<LocalDate, Integer> agrupado = LoteService.agruparPorValidade(
+                List.of(validadeA, validadeB, validadeA, validadeA));
+
+        assertEquals(2, agrupado.size());
+        assertEquals(3, agrupado.get(validadeA));
+        assertEquals(1, agrupado.get(validadeB));
+    }
+
+    @Test
+    void agruparPorValidade_comTodasAsValidadesIguais_deveGerarUmUnicoGrupo() {
+        LocalDate validade = LocalDate.now().plusDays(7);
+
+        Map<LocalDate, Integer> agrupado = LoteService.agruparPorValidade(List.of(validade, validade, validade));
+
+        assertEquals(Map.of(validade, 3), agrupado);
+    }
+
+    @Test
+    void agruparPorValidade_comTodasAsValidadesDiferentes_deveGerarUmGrupoPorItem() {
+        LocalDate validadeA = LocalDate.now().plusDays(2);
+        LocalDate validadeB = LocalDate.now().plusDays(8);
+        LocalDate validadeC = LocalDate.now().plusDays(30);
+
+        Map<LocalDate, Integer> agrupado = LoteService.agruparPorValidade(List.of(validadeC, validadeA, validadeB));
+
+        assertEquals(List.of(validadeC, validadeA, validadeB), List.copyOf(agrupado.keySet()));
+        assertTrue(agrupado.values().stream().allMatch(quantidade -> quantidade == 1));
+    }
+
+    @Test
+    void agruparPorValidade_semItens_deveRetornarMapaVazio() {
+        assertTrue(LoteService.agruparPorValidade(List.of()).isEmpty());
+    }
+
+    @Test
+    void agruparECadastrarPorValidade_deveSalvarUmLotePorDataComAQuantidadeSomada() throws SQLException {
+        LocalDate validadeProxima = LocalDate.now().plusDays(3);
+        LocalDate validadeDistante = LocalDate.now().plusDays(25);
+
+        Map<LocalDate, Integer> agrupado = LoteService.agruparPorValidade(
+                List.of(validadeDistante, validadeProxima, validadeDistante, validadeProxima, validadeDistante));
+        loteService.cadastrarPorValidade(produtoDeTeste.getId(), agrupado, 4.5);
+
+        List<Lote> lotesDoProduto = lotesAtivosDoProdutoDeTeste();
+
+        assertEquals(2, lotesDoProduto.size());
+        assertEquals(validadeProxima, lotesDoProduto.get(0).getDataValidade());
+        assertEquals(2, lotesDoProduto.get(0).getQuantidade());
+        assertEquals(validadeDistante, lotesDoProduto.get(1).getDataValidade());
+        assertEquals(3, lotesDoProduto.get(1).getQuantidade());
+        assertTrue(lotesDoProduto.stream().allMatch(l -> l.getPrecoUnitario() == 4.5));
+    }
+
+    private List<Lote> lotesAtivosDoProdutoDeTeste() throws SQLException {
+        return loteService.listarAtivosFEFO().stream()
+                .filter(l -> l.getProdutoId().equals(produtoDeTeste.getId()))
+                .toList();
     }
 
 }

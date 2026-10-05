@@ -27,7 +27,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -220,8 +219,7 @@ public class DialogNovoLote extends JDialog {
     }
 
     private void salvarComValidadesIndividuais(LoteService loteService, Produto produto, double preco) throws SQLException {
-        // Agrupa por data: itens com a mesma validade viram um único lote com a quantidade somada.
-        Map<LocalDate, Integer> contagemPorData = new LinkedHashMap<>();
+        List<LocalDate> validadesDosItens = new ArrayList<>();
 
         for (int i = 0; i < camposValidadeIndividuais.size(); i++) {
             String texto = camposValidadeIndividuais.get(i).getText().trim();
@@ -237,9 +235,10 @@ public class DialogNovoLote extends JDialog {
                         + ". Use o formato DD/MM/AAAA (ex: 31/12/2026).");
             }
 
-            contagemPorData.merge(data, 1, Integer::sum);
+            validadesDosItens.add(data);
         }
 
+        Map<LocalDate, Integer> contagemPorData = LoteService.agruparPorValidade(validadesDosItens);
         loteService.cadastrarPorValidade(produto.getId(), contagemPorData, preco);
 
         JOptionPane.showMessageDialog(this,

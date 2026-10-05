@@ -25,9 +25,17 @@ public class ConsultaProdutoExterna {
 
     private static final String URL_BASE = "https://world.openfoodfacts.org/api/v2/product/";
 
-    private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
+    private final HttpClient client;
+
+    public ConsultaProdutoExterna() {
+        this(HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build());
+    }
+
+    public ConsultaProdutoExterna(HttpClient client) {
+        this.client = client;
+    }
 
     /**
      * Busca o produto pelo código de barras. Retorna vazio se não for
