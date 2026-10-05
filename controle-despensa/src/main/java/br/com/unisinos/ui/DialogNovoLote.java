@@ -205,17 +205,14 @@ public class DialogNovoLote extends JDialog {
         try {
             quantidade = Double.parseDouble(campoQuantidade.getText().trim().replace(",", "."));
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Quantidade inválida.", "Erro de formato", JOptionPane.WARNING_MESSAGE);
-            return;
+            throw new ValidacaoException("Quantidade inválida.");
         }
 
         LocalDate validade;
         try {
             validade = LocalDate.parse(campoValidadeUnica.getText().trim(), FORMATO_DATA);
         } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Data inválida. Use o formato DD/MM/AAAA (ex: 31/12/2026).",
-                    "Erro de formato", JOptionPane.WARNING_MESSAGE);
-            return;
+            throw new ValidacaoException("Data inválida. Use o formato DD/MM/AAAA (ex: 31/12/2026).");
         }
 
         loteService.cadastrar(produto.getId(), quantidade, preco, validade);
@@ -226,30 +223,24 @@ public class DialogNovoLote extends JDialog {
         // Agrupa por data: itens com a mesma validade viram um único lote com a quantidade somada.
         Map<LocalDate, Integer> contagemPorData = new LinkedHashMap<>();
 
-        for (JTextField campo : camposValidadeIndividuais) {
-            String texto = campo.getText().trim();
+        for (int i = 0; i < camposValidadeIndividuais.size(); i++) {
+            String texto = camposValidadeIndividuais.get(i).getText().trim();
             if (texto.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Preencha a validade de todos os itens.",
-                        "Campo obrigatório", JOptionPane.WARNING_MESSAGE);
-                return;
+                throw new ValidacaoException("Preencha a validade de todos os itens (item " + (i + 1) + " está vazio).");
             }
 
             LocalDate data;
             try {
                 data = LocalDate.parse(texto, FORMATO_DATA);
             } catch (DateTimeParseException e) {
-                JOptionPane.showMessageDialog(this,
-                        "Data inválida em um dos itens. Use o formato DD/MM/AAAA (ex: 31/12/2026).",
-                        "Erro de formato", JOptionPane.WARNING_MESSAGE);
-                return;
+                throw new ValidacaoException("Data inválida no item " + (i + 1)
+                        + ". Use o formato DD/MM/AAAA (ex: 31/12/2026).");
             }
 
             contagemPorData.merge(data, 1, Integer::sum);
         }
 
-        for (Map.Entry<LocalDate, Integer> entrada : contagemPorData.entrySet()) {
-            loteService.cadastrar(produto.getId(), entrada.getValue(), preco, entrada.getKey());
-        }
+        loteService.cadastrarPorValidade(produto.getId(), contagemPorData, preco);
 
         JOptionPane.showMessageDialog(this,
                 contagemPorData.size() + " lote(s) cadastrado(s) com sucesso (agrupados por validade)!");

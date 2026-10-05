@@ -7,7 +7,9 @@ import br.com.unisinos.util.Constantes;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Regras de negócio relacionadas aos lotes: cadastro com validação,
@@ -37,6 +39,31 @@ public class LoteService {
     public Lote cadastrar(Integer produtoId, double quantidade, double precoUnitario, LocalDate dataValidade)
             throws SQLException {
 
+        validarCadastro(produtoId, quantidade, precoUnitario, dataValidade);
+
+        Lote lote = new Lote(produtoId, quantidade, precoUnitario, dataValidade);
+        return loteDAO.inserir(lote);
+    }
+
+    public List<Lote> cadastrarPorValidade(Integer produtoId, Map<LocalDate, Integer> quantidadePorValidade,
+                                           double precoUnitario) throws SQLException {
+
+        if (quantidadePorValidade == null || quantidadePorValidade.isEmpty()) {
+            throw new ValidacaoException("Informe a validade de pelo menos um item.");
+        }
+        for (Map.Entry<LocalDate, Integer> entrada : quantidadePorValidade.entrySet()) {
+            validarCadastro(produtoId, entrada.getValue(), precoUnitario, entrada.getKey());
+        }
+
+        List<Lote> cadastrados = new ArrayList<>();
+        for (Map.Entry<LocalDate, Integer> entrada : quantidadePorValidade.entrySet()) {
+            Lote lote = new Lote(produtoId, entrada.getValue(), precoUnitario, entrada.getKey());
+            cadastrados.add(loteDAO.inserir(lote));
+        }
+        return cadastrados;
+    }
+
+    private void validarCadastro(Integer produtoId, double quantidade, double precoUnitario, LocalDate dataValidade) {
         if (produtoId == null) {
             throw new ValidacaoException("É necessário informar o produto do lote.");
         }
@@ -53,9 +80,6 @@ public class LoteService {
             throw new ValidacaoException(
                     "Não é possível cadastrar um lote já vencido (validade informada: " + dataValidade + ").");
         }
-
-        Lote lote = new Lote(produtoId, quantidade, precoUnitario, dataValidade);
-        return loteDAO.inserir(lote);
     }
 
     /**
