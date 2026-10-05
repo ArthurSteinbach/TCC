@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS produtos (
     nome            TEXT NOT NULL,
     categoria       TEXT,
     unidade_medida  TEXT NOT NULL DEFAULT 'UN',
-    data_cadastro   TEXT NOT NULL DEFAULT (datetime('now'))
+    data_cadastro   TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 
 CREATE TABLE IF NOT EXISTS lotes (
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS lotes (
     quantidade      REAL NOT NULL,
     preco_unitario  REAL NOT NULL,
     data_validade   TEXT NOT NULL,          -- formato ISO: YYYY-MM-DD
-    data_cadastro   TEXT NOT NULL DEFAULT (datetime('now')),
+    data_cadastro   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     status          TEXT NOT NULL DEFAULT 'ATIVO'
                         CHECK (status IN ('ATIVO', 'CONSUMIDO', 'DESCARTADO')),
     data_baixa      TEXT,                   -- preenchida quando sai do status ATIVO

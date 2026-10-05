@@ -22,8 +22,8 @@ public class LoteDAO {
 
     /** Insere um novo lote, sempre com status inicial ATIVO. */
     public Lote inserir(Lote lote) throws SQLException {
-        String sql = "INSERT INTO lotes (produto_id, quantidade, preco_unitario, data_validade, status) "
-                + "VALUES (?, ?, ?, ?, 'ATIVO')";
+        String sql = "INSERT INTO lotes (produto_id, quantidade, preco_unitario, data_validade, status, data_cadastro) "
+                + "VALUES (?, ?, ?, ?, 'ATIVO', datetime('now', 'localtime'))";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -133,7 +133,7 @@ public class LoteDAO {
     }
 
     private void atualizarStatus(int loteId, StatusLote novoStatus) throws SQLException {
-        String sql = "UPDATE lotes SET status = ?, data_baixa = datetime('now') WHERE id = ?";
+        String sql = "UPDATE lotes SET status = ?, data_baixa = datetime('now', 'localtime') WHERE id = ?";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

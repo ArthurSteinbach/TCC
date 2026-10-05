@@ -19,8 +19,8 @@ public class ProdutoDAO {
 
     /** Insere um novo produto no catálogo e preenche o id gerado. */
     public Produto inserir(Produto produto) throws SQLException {
-        String sql = "INSERT INTO produtos (codigo_barras, nome, categoria, unidade_medida) "
-                + "VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO produtos (codigo_barras, nome, categoria, unidade_medida, data_cadastro) "
+                + "VALUES (?, ?, ?, ?, datetime('now', 'localtime'))";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
