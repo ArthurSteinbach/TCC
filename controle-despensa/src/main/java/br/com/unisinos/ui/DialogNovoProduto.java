@@ -155,7 +155,7 @@ public class DialogNovoProduto extends JDialog {
 
         SwingWorker<Optional<InfoProdutoExterno>, Void> worker = new SwingWorker<>() {
             @Override
-            protected Optional<InfoProdutoExterno> doInBackground() {
+            protected Optional<InfoProdutoExterno> doInBackground() throws Exception {
                 return new ConsultaProdutoExterna().buscarPorCodigoBarras(codigo);
             }
 
@@ -174,7 +174,7 @@ public class DialogNovoProduto extends JDialog {
                         labelStatusBusca.setText("Produto não encontrado na base pública — preencha manualmente.");
                     }
                 } catch (Exception e) {
-                    labelStatusBusca.setText("Não foi possível consultar a base pública agora.");
+                    labelStatusBusca.setText("Não foi possível consultar a base pública agora — preencha manualmente.");
                 }
             }
         };

@@ -2,6 +2,7 @@ package br.com.unisinos.integracao;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -30,38 +31,42 @@ public class ConsultaProdutoExterna {
 
     /**
      * Busca o produto pelo código de barras. Retorna vazio se não for
-     * encontrado na base, ou se a consulta falhar por qualquer motivo
-     * (sem internet, base fora do ar, etc.) — nesses casos o fluxo
-     * normal é o usuário preencher os dados manualmente.
+     * encontrado na base. Se a consulta falhar (sem internet, timeout,
+     * base fora do ar, resposta ilegível), lança exceção — em ambos os
+     * casos o fluxo normal é o usuário preencher os dados manualmente.
      */
-    public Optional<InfoProdutoExterno> buscarPorCodigoBarras(String codigoBarras) {
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(URL_BASE + codigoBarras + ".json"))
-                    .timeout(Duration.ofSeconds(5))
-                    .GET()
-                    .build();
+    public Optional<InfoProdutoExterno> buscarPorCodigoBarras(String codigoBarras)
+            throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(URL_BASE + codigoBarras + ".json"))
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            JSONObject json = new JSONObject(response.body());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (json.optInt("status", 0) != 1) {
-                return Optional.empty(); // produto não encontrado na base
-            }
-
-            JSONObject produto = json.getJSONObject("product");
-            String nome = produto.optString("product_name", "").trim();
-            String categorias = produto.optString("categories", "").trim();
-            String categoria = categorias.isEmpty() ? "" : categorias.split(",")[0].trim();
-
-            if (nome.isEmpty()) {
-                return Optional.empty(); // veio resposta, mas sem nome utilizável
-            }
-
-            return Optional.of(new InfoProdutoExterno(nome, categoria));
-
-        } catch (Exception e) {
-            return Optional.empty(); // falha de rede ou de leitura: segue fluxo manual
+        if (response.statusCode() == 404) {
+            return Optional.empty();
         }
+        if (response.statusCode() != 200) {
+            throw new IOException("Resposta inesperada da Open Food Facts: HTTP " + response.statusCode());
+        }
+
+        JSONObject json = new JSONObject(response.body());
+
+        if (json.optInt("status", 0) != 1) {
+            return Optional.empty(); // produto não encontrado na base
+        }
+
+        JSONObject produto = json.getJSONObject("product");
+        String nome = produto.optString("product_name", "").trim();
+        String categorias = produto.optString("categories", "").trim();
+        String categoria = categorias.isEmpty() ? "" : categorias.split(",")[0].trim();
+
+        if (nome.isEmpty()) {
+            return Optional.empty(); // veio resposta, mas sem nome utilizável
+        }
+
+        return Optional.of(new InfoProdutoExterno(nome, categoria));
     }
 }
