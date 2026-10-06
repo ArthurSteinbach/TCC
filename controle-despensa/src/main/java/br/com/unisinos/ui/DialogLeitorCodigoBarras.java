@@ -1,5 +1,6 @@
 package br.com.unisinos.ui;
 
+import br.com.unisinos.camera.ErroCameraException;
 import br.com.unisinos.camera.FonteCelular;
 import br.com.unisinos.camera.FonteDeFrames;
 import br.com.unisinos.camera.FonteWebcam;
@@ -18,6 +19,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -29,6 +31,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 /**
@@ -48,11 +51,11 @@ public class DialogLeitorCodigoBarras extends JDialog {
     private final JTextField campoUrlCelular = new JTextField("http://192.168.0.105:4747/video", 25);
     private final JRadioButton radioWebcam = new JRadioButton("Webcam do computador", true);
     private final JRadioButton radioCelular = new JRadioButton("Celular (rede — ex: DroidCam)");
+    private final JButton btnConectar = new JButton("Conectar");
 
     private final Consumer<String> aoLerComSucesso;
-    private volatile boolean encerrando = false;
     private Thread threadLeitura;
-    private FonteDeFrames fonteAtual;
+    private volatile FonteDeFrames fonteAtual;
 
     public DialogLeitorCodigoBarras(Window parent, Consumer<String> aoLerComSucesso) {
         super(parent, "Ler Código de Barras", ModalityType.APPLICATION_MODAL);
@@ -95,7 +98,6 @@ public class DialogLeitorCodigoBarras extends JDialog {
         c.gridx = 1;
         painelFonte.add(campoUrlCelular, c);
 
-        JButton btnConectar = new JButton("Conectar");
         btnConectar.addActionListener(e -> iniciarLeitura());
 
         JPanel painelBotoesTopo = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -129,41 +131,80 @@ public class DialogLeitorCodigoBarras extends JDialog {
     private void iniciarLeitura() {
         pararLeitura(); // encerra qualquer leitura anterior antes de começar outra
 
-        try {
-            if (radioWebcam.isSelected()) {
-                Webcam webcam = (Webcam) comboWebcams.getSelectedItem();
-                if (webcam == null) {
-                    labelStatus.setText("Nenhuma webcam encontrada no sistema.");
-                    return;
-                }
-                fonteAtual = new FonteWebcam(webcam);
-            } else {
-                fonteAtual = new FonteCelular(campoUrlCelular.getText().trim());
-            }
-        } catch (Exception e) {
-            labelStatus.setText("Erro ao conectar: " + e.getMessage());
+        boolean usarWebcam = radioWebcam.isSelected();
+        Webcam webcam = (Webcam) comboWebcams.getSelectedItem();
+        String urlCelular = campoUrlCelular.getText().trim();
+
+        if (usarWebcam && webcam == null) {
+            labelStatus.setText("Nenhuma webcam encontrada no sistema.");
             return;
         }
 
-        encerrando = false;
-        labelStatus.setText("Conectado. Aponte a câmera para o código de barras...");
+        labelStatus.setText("Conectando...");
+        btnConectar.setEnabled(false);
 
-        threadLeitura = new Thread(this::loopDeLeitura);
-        threadLeitura.setDaemon(true);
-        threadLeitura.start();
+        new SwingWorker<FonteDeFrames, Void>() {
+            @Override
+            protected FonteDeFrames doInBackground() throws Exception {
+                return usarWebcam ? new FonteWebcam(webcam) : new FonteCelular(urlCelular);
+            }
+
+            @Override
+            protected void done() {
+                btnConectar.setEnabled(true);
+
+                FonteDeFrames fonte;
+                try {
+                    fonte = get();
+                } catch (ExecutionException e) {
+                    labelStatus.setText(mensagemDeErro(e.getCause(), usarWebcam));
+                    return;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+
+                if (!isVisible()) {
+                    fonte.fechar();
+                    return;
+                }
+
+                fonteAtual = fonte;
+                labelStatus.setText("Conectado. Aponte a câmera para o código de barras...");
+
+                threadLeitura = new Thread(() -> loopDeLeitura(fonte));
+                threadLeitura.setDaemon(true);
+                threadLeitura.start();
+            }
+        }.execute();
     }
 
-    private void loopDeLeitura() {
+    private static String mensagemDeErro(Throwable erro, boolean usarWebcam) {
+        if (erro instanceof ErroCameraException) {
+            return erro.getMessage();
+        }
+        if (usarWebcam) {
+            return "Não foi possível usar a webcam. Confira se ela está conectada e se não está aberta em outro programa.";
+        }
+        return "Não foi possível ler a câmera do celular. Confira o endereço e tente conectar de novo.";
+    }
+
+    private void loopDeLeitura(FonteDeFrames fonte) {
         LeitorEan13 leitor = new LeitorEan13();
         String ultimoCodigo = null;
         int repeticoes = 0;
+        boolean usarWebcam = fonte instanceof FonteWebcam;
 
-        while (!encerrando) {
+        while (fonteAtual == fonte) {
             BufferedImage imagem;
             try {
-                imagem = fonteAtual.proximoFrame();
+                imagem = fonte.proximoFrame();
             } catch (Exception e) {
-                SwingUtilities.invokeLater(() -> labelStatus.setText("Erro na leitura: " + e.getMessage()));
+                SwingUtilities.invokeLater(() -> {
+                    if (fonteAtual == fonte) {
+                        labelStatus.setText(mensagemDeErro(e, usarWebcam));
+                    }
+                });
                 break;
             }
 
@@ -208,7 +249,6 @@ public class DialogLeitorCodigoBarras extends JDialog {
     }
 
     private void confirmarLeitura(String codigo) {
-        encerrando = true;
         SwingUtilities.invokeLater(() -> {
             labelStatus.setText("Código confirmado: " + codigo);
             aoLerComSucesso.accept(codigo);
@@ -218,13 +258,13 @@ public class DialogLeitorCodigoBarras extends JDialog {
     }
 
     private void pararLeitura() {
-        encerrando = true;
+        FonteDeFrames fonte = fonteAtual;
+        fonteAtual = null;
         if (threadLeitura != null) {
             threadLeitura.interrupt();
         }
-        if (fonteAtual != null) {
-            fonteAtual.fechar();
-            fonteAtual = null;
+        if (fonte != null) {
+            fonte.fechar();
         }
     }
 }
