@@ -2,6 +2,7 @@ package br.com.unisinos.service;
 
 import br.com.unisinos.dao.LoteDAO;
 import br.com.unisinos.exception.ValidacaoException;
+import br.com.unisinos.model.ItemConsumo;
 import br.com.unisinos.model.Lote;
 import br.com.unisinos.util.Constantes;
 
@@ -139,6 +140,59 @@ public class LoteService {
     /** Dá baixa por consumo normal: o usuário utilizou o item. */
     public void consumir(int loteId) throws SQLException {
         loteDAO.marcarComoConsumido(loteId);
+    }
+
+    public List<ItemConsumo> planejarConsumoFEFO(Integer produtoId, double quantidade) throws SQLException {
+        if (produtoId == null) {
+            throw new ValidacaoException("É necessário informar o produto a consumir.");
+        }
+        if (quantidade <= 0) {
+            throw new ValidacaoException("A quantidade a consumir deve ser maior que zero.");
+        }
+
+        List<Lote> ativos = loteDAO.listarAtivosPorProdutoFEFO(produtoId);
+        if (ativos.isEmpty()) {
+            throw new ValidacaoException("Este produto não tem lotes ativos na despensa.");
+        }
+
+        LocalDate hoje = LocalDate.now();
+        List<Lote> naoVencidos = ativos.stream()
+                .filter(l -> !l.getDataValidade().isBefore(hoje))
+                .toList();
+        if (naoVencidos.isEmpty()) {
+            throw new ValidacaoException("Todos os lotes ativos deste produto estão vencidos. "
+                    + "Eles não podem ser consumidos; marque-os como descartados.");
+        }
+
+        double disponivel = naoVencidos.stream().mapToDouble(Lote::getQuantidade).sum();
+        if (quantidade > disponivel) {
+            throw new ValidacaoException(String.format(
+                    "Quantidade indisponível: há apenas %s unidade(s) dentro da validade.", formatar(disponivel)));
+        }
+
+        List<ItemConsumo> plano = new ArrayList<>();
+        double restante = quantidade;
+        for (Lote lote : naoVencidos) {
+            if (restante <= 0) {
+                break;
+            }
+            double consumida = Math.min(restante, lote.getQuantidade());
+            plano.add(new ItemConsumo(lote, consumida));
+            restante -= consumida;
+        }
+        return plano;
+    }
+
+    public List<ItemConsumo> consumirPorFEFO(Integer produtoId, double quantidade) throws SQLException {
+        List<ItemConsumo> plano = planejarConsumoFEFO(produtoId, quantidade);
+        loteDAO.registrarConsumo(plano);
+        return plano;
+    }
+
+    private static String formatar(double quantidade) {
+        return quantidade == Math.rint(quantidade)
+                ? String.valueOf((long) quantidade)
+                : String.valueOf(quantidade);
     }
 
     /** Dá baixa por descarte: o item venceu e foi jogado fora (gera perda financeira). */

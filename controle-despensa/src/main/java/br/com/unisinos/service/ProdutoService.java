@@ -62,4 +62,8 @@ public class ProdutoService {
     public List<Produto> listarTodos() throws SQLException {
         return produtoDAO.listarTodos();
     }
+
+    public List<Produto> listarComLotesAtivos() throws SQLException {
+        return produtoDAO.listarComLotesAtivos();
+    }
 }

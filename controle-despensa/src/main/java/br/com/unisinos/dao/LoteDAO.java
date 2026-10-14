@@ -1,6 +1,7 @@
 package br.com.unisinos.dao;
 
 import br.com.unisinos.db.DatabaseManager;
+import br.com.unisinos.model.ItemConsumo;
 import br.com.unisinos.model.Lote;
 import br.com.unisinos.model.StatusLote;
 
@@ -88,6 +89,81 @@ public class LoteDAO {
                 + "ORDER BY l.data_validade ASC";
         String limite = LocalDate.now().plusDays(dias).toString();
         return executarConsultaLotes(sql, limite);
+    }
+
+    public List<Lote> listarAtivosPorProdutoFEFO(int produtoId) throws SQLException {
+        return listarPorProduto(produtoId, "AND l.status = 'ATIVO' ");
+    }
+
+    public List<Lote> listarPorProduto(int produtoId) throws SQLException {
+        return listarPorProduto(produtoId, "");
+    }
+
+    private List<Lote> listarPorProduto(int produtoId, String filtroStatus) throws SQLException {
+        String sql = "SELECT l.*, p.nome AS nome_produto, p.codigo_barras AS codigo_barras_produto, "
+                + "p.unidade_medida AS unidade_medida_produto "
+                + "FROM lotes l "
+                + "JOIN produtos p ON p.id = l.produto_id "
+                + "WHERE l.produto_id = ? " + filtroStatus
+                + "ORDER BY l.data_validade ASC, l.id ASC";
+        List<Lote> lotes = new ArrayList<>();
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, produtoId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    lotes.add(mapear(rs));
+                }
+            }
+        }
+        return lotes;
+    }
+
+    public void registrarConsumo(List<ItemConsumo> itens) throws SQLException {
+        String sqlConsumoTotal = "UPDATE lotes SET status = 'CONSUMIDO', data_baixa = datetime('now', 'localtime') "
+                + "WHERE id = ? AND status = 'ATIVO' AND quantidade = ?";
+        String sqlRegistroParcial = "INSERT INTO lotes "
+                + "(produto_id, quantidade, preco_unitario, data_validade, status, data_cadastro, data_baixa) "
+                + "SELECT produto_id, ?, preco_unitario, data_validade, 'CONSUMIDO', data_cadastro, "
+                + "datetime('now', 'localtime') FROM lotes WHERE id = ?";
+        String sqlReducao = "UPDATE lotes SET quantidade = ? "
+                + "WHERE id = ? AND status = 'ATIVO' AND quantidade = ?";
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement consumoTotal = conn.prepareStatement(sqlConsumoTotal);
+                 PreparedStatement registroParcial = conn.prepareStatement(sqlRegistroParcial);
+                 PreparedStatement reducao = conn.prepareStatement(sqlReducao)) {
+
+                for (ItemConsumo item : itens) {
+                    Lote lote = item.lote();
+                    int alterados;
+                    if (item.consomeLoteInteiro()) {
+                        consumoTotal.setInt(1, lote.getId());
+                        consumoTotal.setDouble(2, lote.getQuantidade());
+                        alterados = consumoTotal.executeUpdate();
+                    } else {
+                        registroParcial.setDouble(1, item.quantidadeConsumida());
+                        registroParcial.setInt(2, lote.getId());
+                        registroParcial.executeUpdate();
+
+                        reducao.setDouble(1, item.quantidadeRestante());
+                        reducao.setInt(2, lote.getId());
+                        reducao.setDouble(3, lote.getQuantidade());
+                        alterados = reducao.executeUpdate();
+                    }
+                    if (alterados != 1) {
+                        throw new SQLException("O lote " + lote.getId() + " foi alterado durante o consumo.");
+                    }
+                }
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
     }
 
     private List<Lote> executarConsultaLotes(String sql, String parametroData) throws SQLException {

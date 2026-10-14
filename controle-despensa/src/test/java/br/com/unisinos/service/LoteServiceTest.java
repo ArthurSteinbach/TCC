@@ -1,7 +1,9 @@
 package br.com.unisinos.service;
 
+import br.com.unisinos.dao.LoteDAO;
 import br.com.unisinos.db.DatabaseManager;
 import br.com.unisinos.exception.ValidacaoException;
+import br.com.unisinos.model.ItemConsumo;
 import br.com.unisinos.model.Lote;
 import br.com.unisinos.model.Produto;
 import br.com.unisinos.model.StatusLote;
@@ -19,6 +21,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -263,6 +266,137 @@ class LoteServiceTest {
         assertEquals(validadeDistante, lotesDoProduto.get(1).getDataValidade());
         assertEquals(3, lotesDoProduto.get(1).getQuantidade());
         assertTrue(lotesDoProduto.stream().allMatch(l -> l.getPrecoUnitario() == 4.5));
+    }
+
+    @Test
+    void consumirPorFEFO_dentroDeUmLote_deveManterORestanteAtivoECriarRegistroConsumido() throws SQLException {
+        LocalDate validade = LocalDate.now().plusDays(10);
+        Lote lote = loteService.cadastrar(produtoDeTeste.getId(), 5, 4.0, validade);
+
+        loteService.consumirPorFEFO(produtoDeTeste.getId(), 2);
+
+        List<Lote> todos = todosOsLotesDoProdutoDeTeste();
+        assertEquals(2, todos.size());
+
+        Lote original = loteComId(todos, lote.getId());
+        assertEquals(StatusLote.ATIVO, original.getStatus());
+        assertEquals(3, original.getQuantidade());
+        assertNull(original.getDataBaixa());
+
+        Lote consumido = todos.stream().filter(l -> !l.getId().equals(lote.getId())).findFirst().orElseThrow();
+        assertEquals(StatusLote.CONSUMIDO, consumido.getStatus());
+        assertEquals(2, consumido.getQuantidade());
+        assertEquals(validade, consumido.getDataValidade());
+        assertEquals(4.0, consumido.getPrecoUnitario());
+        assertNotNull(consumido.getDataBaixa());
+    }
+
+    @Test
+    void consumirPorFEFO_passandoPorDoisLotes_deveConsumirPrimeiroOQueVenceAntes() throws SQLException {
+        Lote distante = loteService.cadastrar(produtoDeTeste.getId(), 4, 6.0, LocalDate.now().plusDays(20));
+        Lote proximo = loteService.cadastrar(produtoDeTeste.getId(), 3, 5.0, LocalDate.now().plusDays(2));
+
+        List<ItemConsumo> plano = loteService.consumirPorFEFO(produtoDeTeste.getId(), 5);
+
+        assertEquals(2, plano.size());
+        assertEquals(proximo.getId(), plano.get(0).lote().getId());
+        assertEquals(3, plano.get(0).quantidadeConsumida());
+        assertEquals(distante.getId(), plano.get(1).lote().getId());
+        assertEquals(2, plano.get(1).quantidadeConsumida());
+
+        List<Lote> todos = todosOsLotesDoProdutoDeTeste();
+        assertEquals(StatusLote.CONSUMIDO, loteComId(todos, proximo.getId()).getStatus());
+        assertEquals(3, loteComId(todos, proximo.getId()).getQuantidade());
+
+        Lote restanteDistante = loteComId(todos, distante.getId());
+        assertEquals(StatusLote.ATIVO, restanteDistante.getStatus());
+        assertEquals(2, restanteDistante.getQuantidade());
+
+        List<Lote> novosConsumidos = todos.stream()
+                .filter(l -> !l.getId().equals(proximo.getId()) && !l.getId().equals(distante.getId()))
+                .toList();
+        assertEquals(1, novosConsumidos.size());
+        assertEquals(StatusLote.CONSUMIDO, novosConsumidos.get(0).getStatus());
+        assertEquals(2, novosConsumidos.get(0).getQuantidade());
+        assertEquals(LocalDate.now().plusDays(20), novosConsumidos.get(0).getDataValidade());
+        assertEquals(6.0, novosConsumidos.get(0).getPrecoUnitario());
+    }
+
+    @Test
+    void consumirPorFEFO_doLoteInteiro_deveSoMudarStatusParaConsumido() throws SQLException {
+        Lote lote = loteService.cadastrar(produtoDeTeste.getId(), 3, 7.0, LocalDate.now().plusDays(5));
+
+        loteService.consumirPorFEFO(produtoDeTeste.getId(), 3);
+
+        List<Lote> todos = todosOsLotesDoProdutoDeTeste();
+        assertEquals(1, todos.size());
+        assertEquals(lote.getId(), todos.get(0).getId());
+        assertEquals(StatusLote.CONSUMIDO, todos.get(0).getStatus());
+        assertEquals(3, todos.get(0).getQuantidade());
+        assertNotNull(todos.get(0).getDataBaixa());
+    }
+
+    @Test
+    void consumirPorFEFO_deveIgnorarLotesVencidos() throws SQLException {
+        Lote vencido = loteService.cadastrar(produtoDeTeste.getId(), 2, 3.0, LocalDate.now().plusDays(1));
+        loteService.editar(vencido.getId(), 2, 3.0, LocalDate.now().minusDays(2));
+        Lote valido = loteService.cadastrar(produtoDeTeste.getId(), 4, 3.0, LocalDate.now().plusDays(8));
+
+        List<ItemConsumo> plano = loteService.consumirPorFEFO(produtoDeTeste.getId(), 1);
+
+        assertEquals(1, plano.size());
+        assertEquals(valido.getId(), plano.get(0).lote().getId());
+
+        List<Lote> todos = todosOsLotesDoProdutoDeTeste();
+        Lote vencidoDepois = loteComId(todos, vencido.getId());
+        assertEquals(StatusLote.ATIVO, vencidoDepois.getStatus());
+        assertEquals(2, vencidoDepois.getQuantidade());
+        assertEquals(3, loteComId(todos, valido.getId()).getQuantidade());
+    }
+
+    @Test
+    void consumirPorFEFO_comQuantidadeMaiorQueODisponivel_naoDeveAlterarNada() throws SQLException {
+        loteService.cadastrar(produtoDeTeste.getId(), 2, 5.0, LocalDate.now().plusDays(3));
+        loteService.cadastrar(produtoDeTeste.getId(), 1, 5.0, LocalDate.now().plusDays(9));
+        Lote vencido = loteService.cadastrar(produtoDeTeste.getId(), 10, 5.0, LocalDate.now().plusDays(1));
+        loteService.editar(vencido.getId(), 10, 5.0, LocalDate.now().minusDays(1));
+
+        List<String> antes = resumoDosLotesDoProdutoDeTeste();
+
+        ValidacaoException erro = assertThrows(ValidacaoException.class, () ->
+                loteService.consumirPorFEFO(produtoDeTeste.getId(), 4));
+
+        assertTrue(erro.getMessage().contains("3"));
+        assertEquals(antes, resumoDosLotesDoProdutoDeTeste());
+    }
+
+    @Test
+    void consumirPorFEFO_comProdutoSoComLotesVencidos_deveSugerirODescarte() throws SQLException {
+        Lote vencido = loteService.cadastrar(produtoDeTeste.getId(), 2, 5.0, LocalDate.now().plusDays(1));
+        loteService.editar(vencido.getId(), 2, 5.0, LocalDate.now().minusDays(3));
+
+        List<String> antes = resumoDosLotesDoProdutoDeTeste();
+
+        ValidacaoException erro = assertThrows(ValidacaoException.class, () ->
+                loteService.consumirPorFEFO(produtoDeTeste.getId(), 1));
+
+        assertTrue(erro.getMessage().contains("vencidos"));
+        assertTrue(erro.getMessage().contains("descartados"));
+        assertEquals(antes, resumoDosLotesDoProdutoDeTeste());
+    }
+
+    private List<Lote> todosOsLotesDoProdutoDeTeste() throws SQLException {
+        return new LoteDAO().listarPorProduto(produtoDeTeste.getId());
+    }
+
+    private List<String> resumoDosLotesDoProdutoDeTeste() throws SQLException {
+        return todosOsLotesDoProdutoDeTeste().stream()
+                .map(l -> l.getId() + "|" + l.getStatus() + "|" + l.getQuantidade() + "|" + l.getDataBaixa())
+                .toList();
+    }
+
+    private static Lote loteComId(List<Lote> lotes, Integer id) {
+        return lotes.stream().filter(l -> l.getId().equals(id)).findFirst().orElseThrow();
     }
 
     private List<Lote> lotesAtivosDoProdutoDeTeste() throws SQLException {

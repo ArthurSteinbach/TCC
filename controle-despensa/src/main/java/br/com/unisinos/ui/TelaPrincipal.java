@@ -74,6 +74,7 @@ public class TelaPrincipal extends JFrame {
         JButton btnEditar = new JButton("Editar");
         JButton btnAtualizar = new JButton("Atualizar");
 
+        JButton btnConsumirProduto = new JButton("Consumir Produto");
         JButton btnConsumir = new JButton("Marcar como Consumido");
         JButton btnDescartar = new JButton("Marcar como Descartado (vencido)");
         JButton btnAlertas = new JButton("Alertas");
@@ -83,6 +84,7 @@ public class TelaPrincipal extends JFrame {
         btnNovoLote.addActionListener(e -> abrirDialogNovoLote());
         btnEditar.addActionListener(e -> editarSelecionado());
         btnAtualizar.addActionListener(e -> carregarDados());
+        btnConsumirProduto.addActionListener(e -> abrirDialogConsumirProduto());
         btnConsumir.addActionListener(e -> darBaixaSelecionado(true));
         btnDescartar.addActionListener(e -> darBaixaSelecionado(false));
         btnAlertas.addActionListener(e -> abrirAlertas());
@@ -93,6 +95,7 @@ public class TelaPrincipal extends JFrame {
         painelBotoesLinha1.add(btnEditar);
         painelBotoesLinha1.add(btnAtualizar);
 
+        painelBotoesLinha2.add(btnConsumirProduto);
         painelBotoesLinha2.add(btnConsumir);
         painelBotoesLinha2.add(btnDescartar);
         painelBotoesLinha2.add(btnAlertas);
@@ -187,6 +190,23 @@ public class TelaPrincipal extends JFrame {
         }
 
         DialogNovoLote dialog = new DialogNovoLote(this, produtoService, loteService, this::carregarDados);
+        dialog.setVisible(true);
+    }
+
+    private void abrirDialogConsumirProduto() {
+        try {
+            if (produtoService.listarComLotesAtivos().isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Não há produtos com lotes ativos na despensa.",
+                        "Nada para consumir", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+        } catch (SQLException e) {
+            mostrarErro("Erro ao consultar produtos: " + e.getMessage());
+            return;
+        }
+
+        DialogConsumirProduto dialog = new DialogConsumirProduto(this, produtoService, loteService, this::carregarDados);
         dialog.setVisible(true);
     }
 

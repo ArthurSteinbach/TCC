@@ -90,6 +90,23 @@ public class ProdutoDAO {
         return produtos;
     }
 
+    public List<Produto> listarComLotesAtivos() throws SQLException {
+        List<Produto> produtos = new ArrayList<>();
+        String sql = "SELECT * FROM produtos p "
+                + "WHERE EXISTS (SELECT 1 FROM lotes l WHERE l.produto_id = p.id AND l.status = 'ATIVO') "
+                + "ORDER BY p.nome";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                produtos.add(mapear(rs));
+            }
+        }
+        return produtos;
+    }
+
     private Produto mapear(ResultSet rs) throws SQLException {
         Produto p = new Produto();
         p.setId(rs.getInt("id"));
