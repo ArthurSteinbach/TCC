@@ -90,6 +90,43 @@ public class ProdutoDAO {
         return produtos;
     }
 
+    public void atualizar(Produto produto) throws SQLException {
+        String sql = "UPDATE produtos SET nome = ?, categoria = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, produto.getNome());
+            stmt.setString(2, produto.getCategoria());
+            stmt.setInt(3, produto.getId());
+            stmt.executeUpdate();
+        }
+    }
+
+    public void excluir(int id) throws SQLException {
+        String sql = "DELETE FROM produtos WHERE id = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
+
+    public int contarLotes(int produtoId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM lotes WHERE produto_id = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, produtoId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
     public List<Produto> listarComLotesAtivos() throws SQLException {
         List<Produto> produtos = new ArrayList<>();
         String sql = "SELECT * FROM produtos p "

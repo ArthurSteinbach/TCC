@@ -63,6 +63,39 @@ public class ProdutoService {
         return produtoDAO.listarTodos();
     }
 
+    public Produto editar(Integer id, String nome, String categoria) throws SQLException {
+        if (nome == null || nome.isBlank()) {
+            throw new ValidacaoException("O nome do produto é obrigatório.");
+        }
+
+        Produto produto = buscarExistente(id);
+        produto.setNome(nome.trim());
+        produto.setCategoria(categoria == null || categoria.isBlank() ? null : categoria.trim());
+        produtoDAO.atualizar(produto);
+        return produto;
+    }
+
+    public void excluir(Integer id) throws SQLException {
+        Produto produto = buscarExistente(id);
+
+        int lotes = produtoDAO.contarLotes(produto.getId());
+        if (lotes > 0) {
+            throw new ValidacaoException("O produto \"" + produto.getNome() + "\" não pode ser excluído porque tem "
+                    + lotes + " lote(s) registrado(s) (ativos, consumidos ou descartados). "
+                    + "Esses lotes fazem parte do histórico de consumo e do relatório de perdas.");
+        }
+
+        produtoDAO.excluir(produto.getId());
+    }
+
+    private Produto buscarExistente(Integer id) throws SQLException {
+        if (id == null) {
+            throw new ValidacaoException("É necessário informar o produto.");
+        }
+        return produtoDAO.buscarPorId(id)
+                .orElseThrow(() -> new ValidacaoException("Produto não encontrado."));
+    }
+
     public List<Produto> listarComLotesAtivos() throws SQLException {
         return produtoDAO.listarComLotesAtivos();
     }

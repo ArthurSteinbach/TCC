@@ -71,6 +71,7 @@ public class TelaPrincipal extends JFrame {
 
         JButton btnNovoProduto = new JButton("Novo Produto");
         JButton btnNovoLote = new JButton("Novo Lote");
+        JButton btnProdutos = new JButton("Produtos");
         JButton btnEditar = new JButton("Editar");
         JButton btnAtualizar = new JButton("Atualizar");
 
@@ -82,6 +83,7 @@ public class TelaPrincipal extends JFrame {
 
         btnNovoProduto.addActionListener(e -> abrirDialogNovoProduto());
         btnNovoLote.addActionListener(e -> abrirDialogNovoLote());
+        btnProdutos.addActionListener(e -> abrirDialogProdutos());
         btnEditar.addActionListener(e -> editarSelecionado());
         btnAtualizar.addActionListener(e -> carregarDados());
         btnConsumirProduto.addActionListener(e -> abrirDialogConsumirProduto());
@@ -92,6 +94,7 @@ public class TelaPrincipal extends JFrame {
 
         painelBotoesLinha1.add(btnNovoProduto);
         painelBotoesLinha1.add(btnNovoLote);
+        painelBotoesLinha1.add(btnProdutos);
         painelBotoesLinha1.add(btnEditar);
         painelBotoesLinha1.add(btnAtualizar);
 
@@ -190,6 +193,11 @@ public class TelaPrincipal extends JFrame {
         }
 
         DialogNovoLote dialog = new DialogNovoLote(this, produtoService, loteService, this::carregarDados);
+        dialog.setVisible(true);
+    }
+
+    private void abrirDialogProdutos() {
+        DialogProdutos dialog = new DialogProdutos(this, produtoService, this::carregarDados);
         dialog.setVisible(true);
     }
 
