@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="d-flex gap-2 justify-content-end acoes-item" th:fragment="acoes(item)">
+    <form method="post" class="flex-fill"
+          th:action="@{/lotes/{p}/{l}/consumir(p=${item.produtoId()},l=${item.loteId()})}"
+          th:data-confirmacao="|Marcar &quot;${item.nomeProduto()}&quot; como consumido?|">
+        <button type="submit" class="btn btn-success w-100">Consumido</button>
+    </form>
+    <form method="post" class="flex-fill"
+          th:action="@{/lotes/{p}/{l}/descartar(p=${item.produtoId()},l=${item.loteId()})}"
+          th:data-confirmacao="|Marcar &quot;${item.nomeProduto()}&quot; como descartado (vencido)?|">
+        <button type="submit" class="btn btn-outline-danger w-100">Descartado</button>
+    </form>
+</div>
+</body>
+</html>

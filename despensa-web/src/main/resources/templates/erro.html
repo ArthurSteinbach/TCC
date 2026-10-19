@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title th:text="|${titulo} — Despensa|">Erro — Despensa</title>
+</head>
+<body>
+<main class="container py-5 pagina-estreita text-center">
+    <h1 class="h4" th:text="${titulo}">Erro</h1>
+    <p class="text-secondary" th:text="${mensagem}">Mensagem</p>
+    <a class="btn btn-success btn-lg" th:href="@{/}">Tentar de novo</a>
+</main>
+</body>
+</html>

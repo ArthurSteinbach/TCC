@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Entrar — Despensa</title>
+</head>
+<body>
+<main class="container py-4 pagina-estreita">
+    <h1 class="h3 mb-1">Controle de Despensa</h1>
+    <p class="text-secondary mb-4">Entre com seu e-mail e senha.</p>
+
+    <div class="alert alert-danger" th:if="${param.erro}">E-mail ou senha inválidos.</div>
+    <div class="alert alert-warning" th:if="${param.indisponivel}">
+        Não foi possível acessar o banco de dados agora. Tente novamente em alguns instantes.
+    </div>
+    <div class="alert alert-success" th:if="${param.cadastrado}">Conta criada! Entre com seu e-mail e senha.</div>
+    <div class="alert alert-info" th:if="${param.saiu}">Você saiu da sua conta.</div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" id="email" name="email" class="form-control form-control-lg"
+                   autocomplete="username" required autofocus>
+        </div>
+        <div class="mb-4">
+            <label for="senha" class="form-label">Senha</label>
+            <input type="password" id="senha" name="senha" class="form-control form-control-lg"
+                   autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-success btn-lg w-100">Entrar</button>
+    </form>
+
+    <p class="mt-4 text-center">
+        Ainda não tem conta? <a th:href="@{/usuarios/novo}">Criar conta</a>
+    </p>
+</main>
+</body>
+</html>

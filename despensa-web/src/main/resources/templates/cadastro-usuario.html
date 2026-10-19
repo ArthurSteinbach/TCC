@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Criar conta — Despensa</title>
+</head>
+<body>
+<main class="container py-4 pagina-estreita">
+    <h1 class="h3 mb-4">Criar conta</h1>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}">Mensagem de erro</div>
+
+    <form th:action="@{/usuarios/novo}" method="post">
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome</label>
+            <input type="text" id="nome" name="nome" class="form-control form-control-lg"
+                   th:value="${nome}" autocomplete="name" required autofocus>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" id="email" name="email" class="form-control form-control-lg"
+                   th:value="${email}" autocomplete="email" required>
+        </div>
+        <div class="mb-3">
+            <label for="senha" class="form-label">Senha</label>
+            <input type="password" id="senha" name="senha" class="form-control form-control-lg"
+                   autocomplete="new-password" minlength="8" required aria-describedby="ajudaSenha">
+            <div id="ajudaSenha" class="form-text">Pelo menos 8 caracteres.</div>
+        </div>
+        <div class="mb-4">
+            <label for="confirmacaoSenha" class="form-label">Confirmação da senha</label>
+            <input type="password" id="confirmacaoSenha" name="confirmacaoSenha"
+                   class="form-control form-control-lg" autocomplete="new-password" minlength="8" required>
+        </div>
+        <button type="submit" class="btn btn-success btn-lg w-100">Criar conta</button>
+    </form>
+
+    <p class="mt-4 text-center">
+        Já tem conta? <a th:href="@{/login}">Entrar</a>
+    </p>
+</main>
+</body>
+</html>

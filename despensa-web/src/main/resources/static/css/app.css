@@ -1,0 +1,60 @@
+:root {
+    --cor-vencido: rgb(255, 205, 205);
+    --cor-vencendo: rgb(255, 244, 180);
+    --cor-normal: #ffffff;
+}
+
+body {
+    background: #f4f6f8;
+}
+
+.pagina-estreita {
+    max-width: 480px;
+}
+
+.btn,
+.navbar .nav-link,
+.navbar-toggler {
+    min-height: 44px;
+}
+
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+}
+
+.tabela-despensa {
+    background: var(--cor-normal);
+}
+
+.tabela-despensa > tbody > tr.item-vencido > * {
+    --bs-table-bg: var(--cor-vencido);
+}
+
+.tabela-despensa > tbody > tr.item-vencendo > * {
+    --bs-table-bg: var(--cor-vencendo);
+}
+
+.tabela-despensa > tbody > tr.item-normal > * {
+    --bs-table-bg: var(--cor-normal);
+}
+
+.tabela-despensa .acoes-item form {
+    flex: 0 0 auto;
+}
+
+.cartao-item.item-vencido {
+    background: var(--cor-vencido);
+}
+
+.cartao-item.item-vencendo {
+    background: var(--cor-vencendo);
+}
+
+.cartao-item.item-normal {
+    background: var(--cor-normal);
+}
+
+.perda-total {
+    font-weight: 500;
+}
