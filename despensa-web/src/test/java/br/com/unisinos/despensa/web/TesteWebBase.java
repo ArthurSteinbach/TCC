@@ -1,5 +1,6 @@
 package br.com.unisinos.despensa.web;
 
+import br.com.unisinos.despensa.integracao.ConsultaProdutoExterna;
 import br.com.unisinos.despensa.repository.ProdutoRepository;
 import br.com.unisinos.despensa.repository.ProdutoRepositoryEmMemoria;
 import br.com.unisinos.despensa.repository.UsuarioRepository;
@@ -50,6 +51,9 @@ abstract class TesteWebBase {
     @MockitoBean
     protected UsuarioRepository usuarioRepository;
 
+    @MockitoBean
+    protected ConsultaProdutoExterna consultaProdutoExterna;
+
     static ProdutoRepository produtoRepository() {
         return new ProdutoRepositoryEmMemoria();
     }
@@ -61,7 +65,7 @@ abstract class TesteWebBase {
     @BeforeEach
     void limparDados() {
         repositorio().limpar();
-        Mockito.reset(usuarioRepository);
+        Mockito.reset(usuarioRepository, consultaProdutoExterna);
     }
 
     protected ProdutoRepositoryEmMemoria repositorio() {

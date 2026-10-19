@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Cadastrar — Despensa</title>
+</head>
+<body>
+<main class="container py-3 pagina-formulario" id="paginaCadastro"
+      th:attr="data-url-consulta=@{/cadastrar/consulta},data-hoje=${hoje},data-limite-unidades=${limiteUnidades}">
+    <h1 class="h4 mb-3">Cadastrar compra</h1>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}" role="alert">Mensagem de erro</div>
+
+    <form th:action="@{/cadastrar}" th:object="${form}" method="post" id="formCadastro">
+        <section class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-3">1. Código de barras</h2>
+
+                <button type="button" class="btn btn-primary btn-lg w-100 mb-3" id="btnLerCodigo">
+                    Ler código de barras
+                </button>
+
+                <div class="area-camera mb-3" id="areaCamera" hidden>
+                    <div class="visor-camera">
+                        <video id="videoCamera" playsinline muted autoplay></video>
+                        <div class="mira-camera"></div>
+                    </div>
+                    <p class="small text-secondary my-2">Aponte a câmera para o código de barras e segure firme.</p>
+                    <button type="button" class="btn btn-outline-secondary w-100" id="btnCancelarLeitura">
+                        Cancelar leitura
+                    </button>
+                </div>
+
+                <div class="alert alert-warning" id="mensagemCamera" role="alert" hidden></div>
+
+                <label for="codigoBarras" class="form-label">Ou digite o código</label>
+                <div class="input-group input-group-lg">
+                    <input type="text" class="form-control" th:field="*{codigoBarras}" inputmode="numeric"
+                           autocomplete="off" required>
+                    <button type="button" class="btn btn-outline-primary" id="btnBuscarCodigo">Buscar</button>
+                </div>
+
+                <div class="alert mt-3 mb-0" id="mensagemConsulta" role="status" hidden></div>
+            </div>
+        </section>
+
+        <section class="card mb-3" id="secaoProduto" th:hidden="${!codigoInformado}">
+            <div class="card-body">
+                <h2 class="h6 mb-3">2. Produto</h2>
+
+                <div id="produtoExistente" th:hidden="${produtoExistente == null}">
+                    <p class="mb-0">Produto já cadastrado:
+                        <strong id="nomeProdutoExistente" th:text="${produtoExistente?.nome}">Nome</strong>
+                    </p>
+                </div>
+
+                <div id="camposProdutoNovo" th:hidden="${produtoExistente != null}">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome do produto</label>
+                        <input type="text" class="form-control form-control-lg" th:field="*{nome}" required
+                               th:disabled="${produtoExistente != null}">
+                    </div>
+                    <div>
+                        <label for="categoria" class="form-label">Categoria <span class="text-secondary">(opcional)</span></label>
+                        <input type="text" class="form-control form-control-lg" th:field="*{categoria}"
+                               th:disabled="${produtoExistente != null}">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3" id="secaoLote" th:hidden="${!codigoInformado}">
+            <div class="card-body">
+                <h2 class="h6 mb-3">3. Lote</h2>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label for="quantidade" class="form-label">Quantidade</label>
+                        <input type="number" class="form-control form-control-lg" th:field="*{quantidade}"
+                               min="1" step="1" inputmode="numeric" required>
+                    </div>
+                    <div class="col-6">
+                        <label for="precoUnitario" class="form-label">Preço unitário (R$)</label>
+                        <input type="number" class="form-control form-control-lg" th:field="*{precoUnitario}"
+                               min="0" step="0.01" inputmode="decimal" placeholder="0,00" required>
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="mesmaValidade" name="mesmaValidade"
+                           value="true" th:checked="*{mesmaValidade}">
+                    <input type="hidden" name="_mesmaValidade" value="on">
+                    <label class="form-check-label" for="mesmaValidade">Todos os itens têm a mesma validade</label>
+                </div>
+
+                <div id="validadeUnica" th:hidden="${!form.mesmaValidade}">
+                    <label for="validade" class="form-label">Validade</label>
+                    <input type="date" class="form-control form-control-lg" th:field="*{validade}"
+                           th:min="${hoje}" th:disabled="${!form.mesmaValidade}" required>
+                </div>
+
+                <div id="validadesIndividuais" th:hidden="${form.mesmaValidade}">
+                    <p class="small text-secondary mb-2">Informe a validade de cada unidade.</p>
+                    <p class="small text-danger mb-2" id="avisoLimiteUnidades" hidden
+                       th:text="|Para validades diferentes, cadastre no máximo ${limiteUnidades} unidades por vez.|">
+                        Limite de unidades
+                    </p>
+                    <div id="listaValidades">
+                        <th:block th:unless="${form.mesmaValidade}">
+                            <div class="mb-2" th:each="data, estado : ${form.validades}">
+                                <label class="form-label" th:for="|validade-${estado.count}|"
+                                       th:text="|Unidade ${estado.count}|">Unidade 1</label>
+                                <input type="date" class="form-control form-control-lg" name="validades"
+                                       th:id="|validade-${estado.count}|" th:value="${data}" th:min="${hoje}" required>
+                            </div>
+                        </th:block>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg w-100 mt-4">Salvar</button>
+            </div>
+        </section>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js"
+            integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf"
+            crossorigin="anonymous"></script>
+    <script th:src="@{/js/leitor-codigo-barras.js}"></script>
+    <script th:src="@{/js/cadastrar.js}"></script>
+</main>
+</body>
+</html>

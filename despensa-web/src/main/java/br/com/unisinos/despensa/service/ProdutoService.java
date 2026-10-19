@@ -23,6 +23,10 @@ public class ProdutoService {
     }
 
     public Produto cadastrar(String usuarioId, String codigoBarras, String nome, String categoria) {
+        return salvarNovo(prepararNovo(usuarioId, codigoBarras, nome, categoria));
+    }
+
+    Produto prepararNovo(String usuarioId, String codigoBarras, String nome, String categoria) {
         validarUsuario(usuarioId);
         if (codigoBarras == null || codigoBarras.isBlank()) {
             throw new ValidacaoException("O código de barras é obrigatório.");
@@ -35,8 +39,11 @@ public class ProdutoService {
             throw codigoRepetido(existente.get().getNome());
         }
 
-        Produto produto = new Produto(usuarioId, codigo, nome.trim(), normalizarCategoria(categoria),
+        return new Produto(usuarioId, codigo, nome.trim(), normalizarCategoria(categoria),
                 LocalDateTime.now(relogio));
+    }
+
+    Produto salvarNovo(Produto produto) {
         try {
             return produtoRepository.save(produto);
         } catch (DuplicateKeyException e) {

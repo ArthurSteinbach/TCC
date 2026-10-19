@@ -58,3 +58,30 @@ body {
 .perda-total {
     font-weight: 500;
 }
+
+.pagina-formulario {
+    max-width: 640px;
+}
+
+.visor-camera {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: #000;
+}
+
+.visor-camera video {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    object-fit: cover;
+}
+
+.mira-camera {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 50%;
+    border-top: 3px solid rgba(220, 53, 69, 0.85);
+    pointer-events: none;
+}

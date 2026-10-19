@@ -52,12 +52,7 @@ public class LoteService {
 
     public List<Lote> cadastrarPorValidade(String usuarioId, String produtoId,
                                            Map<LocalDate, Integer> quantidadePorValidade, double precoUnitario) {
-        if (quantidadePorValidade == null || quantidadePorValidade.isEmpty()) {
-            throw new ValidacaoException("Informe a validade de pelo menos um item.");
-        }
-        for (Map.Entry<LocalDate, Integer> entrada : quantidadePorValidade.entrySet()) {
-            validarCadastro(entrada.getValue() == null ? 0 : entrada.getValue(), precoUnitario, entrada.getKey());
-        }
+        validarQuantidadesPorValidade(quantidadePorValidade, precoUnitario);
 
         Produto produto = produtoService.buscarPorId(usuarioId, produtoId);
         List<Lote> cadastrados = new ArrayList<>();
@@ -67,6 +62,17 @@ public class LoteService {
         produto.getLotes().addAll(cadastrados);
         produtoRepository.save(produto);
         return cadastrados;
+    }
+
+    public Produto cadastrarProdutoComLotes(String usuarioId, String codigoBarras, String nome, String categoria,
+                                            Map<LocalDate, Integer> quantidadePorValidade, double precoUnitario) {
+        validarQuantidadesPorValidade(quantidadePorValidade, precoUnitario);
+
+        Produto produto = produtoService.prepararNovo(usuarioId, codigoBarras, nome, categoria);
+        for (Map.Entry<LocalDate, Integer> entrada : quantidadePorValidade.entrySet()) {
+            produto.getLotes().add(novoLote(entrada.getValue(), precoUnitario, entrada.getKey()));
+        }
+        return produtoService.salvarNovo(produto);
     }
 
     public static Map<LocalDate, Integer> agruparPorValidade(List<LocalDate> validadesDosItens) {
@@ -229,6 +235,15 @@ public class LoteService {
             throw new ValidacaoException("Este lote já foi baixado (status " + lote.getStatus() + ").");
         }
         return lote;
+    }
+
+    private void validarQuantidadesPorValidade(Map<LocalDate, Integer> quantidadePorValidade, double precoUnitario) {
+        if (quantidadePorValidade == null || quantidadePorValidade.isEmpty()) {
+            throw new ValidacaoException("Informe a validade de pelo menos um item.");
+        }
+        for (Map.Entry<LocalDate, Integer> entrada : quantidadePorValidade.entrySet()) {
+            validarCadastro(entrada.getValue() == null ? 0 : entrada.getValue(), precoUnitario, entrada.getKey());
+        }
     }
 
     private void validarCadastro(double quantidade, double precoUnitario, LocalDate dataValidade) {

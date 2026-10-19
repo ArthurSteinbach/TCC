@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -35,6 +36,14 @@ class SegurancaWebTest extends TesteWebBase {
         mockMvc.perform(get(pagina))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
+    void consultaDeCodigo_semLogin_deveRedirecionarParaOLoginSemConsultarNada() throws Exception {
+        mockMvc.perform(get("/cadastrar/consulta").param("codigo", "7891000100103"))
+                .andExpect(redirectedUrl("/login"));
+
+        verifyNoInteractions(consultaProdutoExterna);
     }
 
     @Test

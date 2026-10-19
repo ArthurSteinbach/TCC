@@ -11,13 +11,12 @@ import java.util.Map;
 public class EmConstrucaoController {
 
     private static final Map<String, String> PAGINAS = Map.of(
-            "cadastrar", "Cadastrar",
             "consumir", "Consumir",
             "alertas", "Alertas",
             "relatorio", "Relatório",
             "produtos", "Produtos");
 
-    @GetMapping("/{pagina:cadastrar|consumir|alertas|relatorio|produtos}")
+    @GetMapping("/{pagina:consumir|alertas|relatorio|produtos}")
     public String emConstrucao(@PathVariable String pagina, Model model) {
         model.addAttribute("menu", pagina);
         model.addAttribute("titulo", PAGINAS.get(pagina));
