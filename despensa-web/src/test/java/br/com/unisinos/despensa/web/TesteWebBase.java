@@ -1,6 +1,8 @@
 package br.com.unisinos.despensa.web;
 
 import br.com.unisinos.despensa.integracao.ConsultaProdutoExterna;
+import br.com.unisinos.despensa.model.Lote;
+import br.com.unisinos.despensa.model.Produto;
 import br.com.unisinos.despensa.repository.ProdutoRepository;
 import br.com.unisinos.despensa.repository.ProdutoRepositoryEmMemoria;
 import br.com.unisinos.despensa.repository.UsuarioRepository;
@@ -70,5 +72,19 @@ abstract class TesteWebBase {
 
     protected ProdutoRepositoryEmMemoria repositorio() {
         return (ProdutoRepositoryEmMemoria) produtoRepository;
+    }
+
+    protected Lote lote(UsuarioLogado usuario, Produto produto, int quantidade, double preco, LocalDate validade) {
+        return loteService.cadastrar(usuario.getId(), produto.getId(), quantidade, preco, validade);
+    }
+
+    protected Lote loteVencido(UsuarioLogado usuario, Produto produto, int quantidade, double preco, int diasVencido) {
+        Lote lote = lote(usuario, produto, quantidade, preco, HOJE.plusDays(1));
+        return loteService.editar(usuario.getId(), produto.getId(), lote.getId(), quantidade, preco,
+                HOJE.minusDays(diasVencido));
+    }
+
+    protected Lote recarregar(UsuarioLogado usuario, Produto produto, Lote lote) {
+        return produtoService.buscarPorId(usuario.getId(), produto.getId()).buscarLote(lote.getId()).orElseThrow();
     }
 }

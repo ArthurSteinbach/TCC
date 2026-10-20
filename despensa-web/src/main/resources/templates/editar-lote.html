@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Editar lote — Despensa</title>
+</head>
+<body>
+<main class="container py-3 pagina-formulario">
+    <h1 class="h4 mb-1">Editar lote</h1>
+    <p class="text-secondary mb-3" th:text="${produto.nome}">Produto</p>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}" role="alert">Mensagem de erro</div>
+
+    <form th:action="@{/lotes/{p}/{l}/editar(p=${produto.id},l=${loteId})}" method="post" class="card">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <label for="quantidade" class="form-label">Quantidade</label>
+                    <input type="number" class="form-control form-control-lg" id="quantidade" name="quantidade"
+                           th:value="${quantidade}" min="1" step="1" inputmode="numeric" required>
+                </div>
+                <div class="col-6">
+                    <label for="precoUnitario" class="form-label">Preço unitário (R$)</label>
+                    <input type="number" class="form-control form-control-lg" id="precoUnitario" name="precoUnitario"
+                           th:value="${precoUnitario}" min="0" step="0.01" inputmode="decimal" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="validade" class="form-label">Validade</label>
+                <input type="date" class="form-control form-control-lg" id="validade" name="validade"
+                       th:value="${validade}" required>
+            </div>
+            <button type="submit" class="btn btn-success btn-lg w-100 mb-2">Salvar</button>
+            <a class="btn btn-outline-secondary w-100" th:href="@{/}">Cancelar</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

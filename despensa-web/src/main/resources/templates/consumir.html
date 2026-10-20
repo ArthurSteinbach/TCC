@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Consumir — Despensa</title>
+</head>
+<body>
+<main class="container py-3 pagina-formulario" id="paginaConsumo">
+    <h1 class="h4 mb-3">Consumir</h1>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}" role="alert">Mensagem de erro</div>
+
+    <div class="text-center py-5" th:if="${#lists.isEmpty(opcoes)}">
+        <p class="text-secondary">Nenhum produto com itens na despensa.</p>
+        <a class="btn btn-success btn-lg" th:href="@{/cadastrar}">Cadastrar uma compra</a>
+    </div>
+
+    <th:block th:unless="${#lists.isEmpty(opcoes)}">
+        <section class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-3">1. Produto e quantidade</h2>
+
+                <th:block th:replace="~{fragments/camera :: leitor}"></th:block>
+                <div class="alert" id="mensagemLeitura" role="status" hidden></div>
+
+                <form th:action="@{/consumir}" method="get" id="formPrevia">
+                    <div class="mb-3">
+                        <label for="produtoId" class="form-label">Ou escolha na lista</label>
+                        <select class="form-select form-select-lg" id="produtoId" name="produtoId" required>
+                            <option value="">Escolha o produto</option>
+                            <option th:each="opcao : ${opcoes}" th:value="${opcao.produtoId()}"
+                                    th:text="${opcao.rotulo()}" th:data-codigo="${opcao.codigoBarras()}"
+                                    th:data-nome="${opcao.nome()}"
+                                    th:selected="${opcao.produtoId() == produtoSelecionado}">Produto</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label">Quantidade</label>
+                        <input type="number" class="form-control form-control-lg" id="quantidade" name="quantidade"
+                               th:value="${quantidade}" min="1" step="1" inputmode="numeric" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Ver prévia</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="card mb-3" id="secaoPrevia" th:if="${previa != null}">
+            <div class="card-body">
+                <h2 class="h6 mb-1">2. Confira antes de confirmar</h2>
+                <p class="text-secondary small mb-3">
+                    Os itens que vencem primeiro saem primeiro (regra FEFO).
+                </p>
+                <p class="mb-2">
+                    <strong th:text="${quantidadePrevia}">1</strong>
+                    <span th:text="${quantidadePrevia == 1} ? 'unidade de' : 'unidades de'">unidades de</span>
+                    <strong th:text="${nomeProdutoPrevia}">Produto</strong>
+                </p>
+
+                <ul class="list-group mb-3">
+                    <li class="list-group-item" th:each="linha : ${previa}">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <span>Validade
+                                <strong th:text="${#temporals.format(linha.dataValidade(), 'dd/MM/yyyy')}">01/01/2026</strong>
+                            </span>
+                            <span>Sai <strong th:text="${linha.quantidadeConsumida()}">1</strong>
+                                de <span th:text="${linha.quantidadeNoLote()}">1</span></span>
+                        </div>
+                        <div class="small text-secondary"
+                             th:text="${linha.loteInteiro()} ? 'O lote inteiro será usado.' : |Ficam ${linha.quantidadeRestante()} neste lote.|">
+                            Ficam 0 neste lote.
+                        </div>
+                    </li>
+                </ul>
+
+                <form th:action="@{/consumir}" method="post">
+                    <input type="hidden" name="produtoId" th:value="${produtoSelecionado}">
+                    <input type="hidden" name="quantidade" th:value="${quantidadePrevia}">
+                    <button type="submit" class="btn btn-success btn-lg w-100 mb-2">Confirmar consumo</button>
+                </form>
+                <a class="btn btn-outline-secondary w-100" th:href="@{/consumir}">Cancelar</a>
+            </div>
+        </section>
+
+        <th:block th:replace="~{fragments/camera :: scripts}"></th:block>
+        <script th:src="@{/js/consumir.js}"></script>
+    </th:block>
+</main>
+</body>
+</html>

@@ -10,16 +10,22 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class DespensaController {
 
     static final String MENSAGEM_ALTERACAO_CONCORRENTE = "Este item foi alterado em outra tela, atualize a página";
+
+    private static final Map<String, String> DESTINOS_APOS_BAIXA = Map.of(
+            "despensa", "redirect:/",
+            "alertas", "redirect:/alertas");
 
     private final LoteService loteService;
     private final Clock relogio;
@@ -43,21 +49,34 @@ public class DespensaController {
         return "despensa";
     }
 
+    @GetMapping("/alertas")
+    public String alertas(@AuthenticationPrincipal UsuarioLogado usuario, Model model) {
+        LocalDate hoje = LocalDate.now(relogio);
+        model.addAttribute("menu", "alertas");
+        model.addAttribute("itens", loteService.listarAlertaVencimento(usuario.getId()).stream()
+                .map(l -> ItemDespensa.de(l, hoje))
+                .toList());
+        return "alertas";
+    }
+
     @PostMapping("/lotes/{produtoId}/{loteId}/consumir")
     public String consumir(@AuthenticationPrincipal UsuarioLogado usuario, @PathVariable String produtoId,
-                           @PathVariable String loteId, RedirectAttributes redirecionamento) {
-        return darBaixa(redirecionamento, "Item marcado como consumido.",
+                           @PathVariable String loteId, @RequestParam(defaultValue = "despensa") String origem,
+                           RedirectAttributes redirecionamento) {
+        return darBaixa(redirecionamento, origem, "Item marcado como consumido.",
                 () -> loteService.consumir(usuario.getId(), produtoId, loteId));
     }
 
     @PostMapping("/lotes/{produtoId}/{loteId}/descartar")
     public String descartar(@AuthenticationPrincipal UsuarioLogado usuario, @PathVariable String produtoId,
-                            @PathVariable String loteId, RedirectAttributes redirecionamento) {
-        return darBaixa(redirecionamento, "Item marcado como descartado.",
+                            @PathVariable String loteId, @RequestParam(defaultValue = "despensa") String origem,
+                            RedirectAttributes redirecionamento) {
+        return darBaixa(redirecionamento, origem, "Item marcado como descartado.",
                 () -> loteService.descartar(usuario.getId(), produtoId, loteId));
     }
 
-    private String darBaixa(RedirectAttributes redirecionamento, String mensagemDeSucesso, Runnable baixa) {
+    private String darBaixa(RedirectAttributes redirecionamento, String origem, String mensagemDeSucesso,
+                            Runnable baixa) {
         try {
             baixa.run();
             redirecionamento.addFlashAttribute("sucesso", mensagemDeSucesso);
@@ -66,6 +85,6 @@ public class DespensaController {
         } catch (OptimisticLockingFailureException e) {
             redirecionamento.addFlashAttribute("erro", MENSAGEM_ALTERACAO_CONCORRENTE);
         }
-        return "redirect:/";
+        return DESTINOS_APOS_BAIXA.getOrDefault(origem, "redirect:/");
     }
 }

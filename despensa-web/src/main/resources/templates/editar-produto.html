@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Editar produto — Despensa</title>
+</head>
+<body>
+<main class="container py-3 pagina-formulario">
+    <h1 class="h4 mb-3">Editar produto</h1>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}" role="alert">Mensagem de erro</div>
+
+    <form th:action="@{/produtos/{id}/editar(id=${produto.id})}" method="post" class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="codigoBarras" class="form-label">Código de barras</label>
+                <input type="text" class="form-control form-control-lg" id="codigoBarras"
+                       th:value="${produto.codigoBarras}" readonly>
+                <div class="form-text">O código de barras não pode ser alterado.</div>
+            </div>
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" class="form-control form-control-lg" id="nome" name="nome" th:value="${nome}"
+                       required>
+            </div>
+            <div class="mb-4">
+                <label for="categoria" class="form-label">Categoria <span class="text-secondary">(opcional)</span></label>
+                <input type="text" class="form-control form-control-lg" id="categoria" name="categoria"
+                       th:value="${categoria}">
+            </div>
+            <button type="submit" class="btn btn-success btn-lg w-100 mb-2">Salvar</button>
+            <a class="btn btn-outline-secondary w-100" th:href="@{/produtos}">Cancelar</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

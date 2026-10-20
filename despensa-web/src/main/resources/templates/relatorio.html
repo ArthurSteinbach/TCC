@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Relatório de perdas — Despensa</title>
+</head>
+<body>
+<main class="container py-3">
+    <h1 class="h4 mb-3">Relatório de perdas</h1>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <p class="text-secondary mb-1">Total perdido com itens descartados</p>
+            <p class="h3 mb-0 text-danger" id="totalPerdido"
+               th:text="|R$ ${#numbers.formatDecimal(perdaTotal, 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</p>
+        </div>
+    </div>
+
+    <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(descartados)}">
+        <p class="mb-0">Nenhum item descartado.</p>
+    </div>
+
+    <th:block th:unless="${#lists.isEmpty(descartados)}">
+        <div class="d-none d-md-block">
+            <table class="table align-middle bg-white">
+                <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th class="text-end">Quantidade</th>
+                    <th class="text-end">Valor (R$)</th>
+                    <th>Descartado em</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${descartados}" class="linha-descarte">
+                    <td th:text="${item.nomeProduto()}">Produto</td>
+                    <td class="text-end" th:text="${item.quantidadeFormatada()}">1</td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}">0,00</td>
+                    <td th:text="${item.dataBaixa() != null} ? ${#temporals.format(item.dataBaixa(), 'dd/MM/yyyy HH:mm')} : '-'">
+                        01/01/2026 10:00
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-md-none">
+            <div class="card mb-2" th:each="item : ${descartados}">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between gap-2">
+                        <strong th:text="${item.nomeProduto()}">Produto</strong>
+                        <span class="text-danger text-nowrap"
+                              th:text="|R$ ${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</span>
+                    </div>
+                    <div class="small text-secondary">
+                        <span th:text="|${item.quantidadeFormatada()} un.|">1 un.</span> ·
+                        <span th:text="${item.dataBaixa() != null} ? ${#temporals.format(item.dataBaixa(), 'dd/MM/yyyy HH:mm')} : '-'">01/01/2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</main>
+</body>
+</html>

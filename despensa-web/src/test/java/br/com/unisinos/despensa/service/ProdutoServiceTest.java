@@ -102,6 +102,20 @@ class ProdutoServiceTest {
     }
 
     @Test
+    void listarComLotesAtivos_deveIgnorarProdutosSemLotesOuSoComLotesBaixados() {
+        Produto comAtivo = produtoService.cadastrar(USUARIO, "1", "Com lote ativo", null);
+        loteService.cadastrar(USUARIO, comAtivo.getId(), 1, 1.0, HOJE.plusDays(5));
+        produtoService.cadastrar(USUARIO, "2", "Sem lotes", null);
+        Produto soBaixados = produtoService.cadastrar(USUARIO, "3", "Só baixados", null);
+        Lote baixado = loteService.cadastrar(USUARIO, soBaixados.getId(), 1, 1.0, HOJE.plusDays(5));
+        loteService.consumir(USUARIO, soBaixados.getId(), baixado.getId());
+
+        List<String> nomes = produtoService.listarComLotesAtivos(USUARIO).stream().map(Produto::getNome).toList();
+
+        assertEquals(List.of("Com lote ativo"), nomes);
+    }
+
+    @Test
     void editar_deveAlterarNomeECategoriaSemMudarOCodigoDeBarras() {
         Produto produto = produtoService.cadastrar(USUARIO, "7891000100103", "Leite Integral", "Laticínios");
 

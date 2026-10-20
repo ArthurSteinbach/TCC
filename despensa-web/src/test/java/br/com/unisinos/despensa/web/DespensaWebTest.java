@@ -4,6 +4,8 @@ import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.Produto;
 import br.com.unisinos.despensa.model.StatusLote;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -87,11 +89,22 @@ class DespensaWebTest extends TesteWebBase {
         }
     }
 
-    @Test
-    void itemDoMenuAindaNaoFeito_deveMostrarPaginaEmConstrucao() throws Exception {
-        mockMvc.perform(get("/alertas").with(user(ANA)))
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/produtos"})
+    void todosOsItensDoMenu_devemAbrirUmaPaginaDeVerdade(String pagina) throws Exception {
+        mockMvc.perform(get(pagina).with(user(ANA)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Esta página está em construção.")));
+                .andExpect(content().string(not(containsString("em construção"))));
+    }
+
+    @Test
+    void cadaLoteDaDespensa_deveTerOBotaoEditar() throws Exception {
+        Produto produto = produtoService.cadastrar(ANA.getId(), "111", "Feijão", null);
+        Lote lote = lote(ANA, produto, 1, 8.0, HOJE.plusDays(10));
+
+        mockMvc.perform(get("/").with(user(ANA)))
+                .andExpect(content().string(containsString(
+                        "href=\"/lotes/" + produto.getId() + "/" + lote.getId() + "/editar\"")));
     }
 
     @Test

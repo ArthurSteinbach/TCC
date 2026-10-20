@@ -16,22 +16,7 @@
             <div class="card-body">
                 <h2 class="h6 mb-3">1. Código de barras</h2>
 
-                <button type="button" class="btn btn-primary btn-lg w-100 mb-3" id="btnLerCodigo">
-                    Ler código de barras
-                </button>
-
-                <div class="area-camera mb-3" id="areaCamera" hidden>
-                    <div class="visor-camera">
-                        <video id="videoCamera" playsinline muted autoplay></video>
-                        <div class="mira-camera"></div>
-                    </div>
-                    <p class="small text-secondary my-2">Aponte a câmera para o código de barras e segure firme.</p>
-                    <button type="button" class="btn btn-outline-secondary w-100" id="btnCancelarLeitura">
-                        Cancelar leitura
-                    </button>
-                </div>
-
-                <div class="alert alert-warning" id="mensagemCamera" role="alert" hidden></div>
+                <th:block th:replace="~{fragments/camera :: leitor}"></th:block>
 
                 <label for="codigoBarras" class="form-label">Ou digite o código</label>
                 <div class="input-group input-group-lg">
@@ -122,10 +107,7 @@
         </section>
     </form>
 
-    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js"
-            integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf"
-            crossorigin="anonymous"></script>
-    <script th:src="@{/js/leitor-codigo-barras.js}"></script>
+    <th:block th:replace="~{fragments/camera :: scripts}"></th:block>
     <script th:src="@{/js/cadastrar.js}"></script>
 </main>
 </body>

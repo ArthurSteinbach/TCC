@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Alertas — Despensa</title>
+</head>
+<body>
+<main class="container py-3">
+    <h1 class="h4 mb-3">Alertas de vencimento</h1>
+
+    <div class="alert alert-success" th:if="${sucesso}" th:text="${sucesso}">Mensagem de sucesso</div>
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}">Mensagem de erro</div>
+
+    <div class="text-center py-5" th:if="${#lists.isEmpty(itens)}">
+        <p class="h5 text-success mb-2">Tudo em dia</p>
+        <p class="text-secondary mb-0">Nenhum item vencido ou vencendo nos próximos 7 dias.</p>
+    </div>
+
+    <th:block th:unless="${#lists.isEmpty(itens)}">
+        <p class="text-secondary">
+            <span th:text="${#lists.size(itens)}">0</span> item(ns) vencidos ou vencendo em até 7 dias.
+        </p>
+        <div th:replace="~{fragments/lista-lotes :: lista(${itens}, 'alertas')}"></div>
+    </th:block>
+</main>
+</body>
+</html>

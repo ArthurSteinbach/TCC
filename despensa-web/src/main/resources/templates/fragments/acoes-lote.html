@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
-<div class="d-flex gap-2 justify-content-end acoes-item" th:fragment="acoes(item)">
+<div class="d-flex gap-2 justify-content-end acoes-item" th:fragment="acoes(item, origem)">
     <form method="post" class="flex-fill"
           th:action="@{/lotes/{p}/{l}/consumir(p=${item.produtoId()},l=${item.loteId()})}"
           th:data-confirmacao="|Marcar &quot;${item.nomeProduto()}&quot; como consumido?|">
+        <input type="hidden" name="origem" th:value="${origem}">
         <button type="submit" class="btn btn-success w-100">Consumido</button>
     </form>
     <form method="post" class="flex-fill"
           th:action="@{/lotes/{p}/{l}/descartar(p=${item.produtoId()},l=${item.loteId()})}"
           th:data-confirmacao="|Marcar &quot;${item.nomeProduto()}&quot; como descartado (vencido)?|">
+        <input type="hidden" name="origem" th:value="${origem}">
         <button type="submit" class="btn btn-outline-danger w-100">Descartado</button>
     </form>
+    <a class="btn btn-outline-secondary flex-fill"
+       th:href="@{/lotes/{p}/{l}/editar(p=${item.produtoId()},l=${item.loteId()})}">Editar</a>
 </div>
 </body>
 </html>

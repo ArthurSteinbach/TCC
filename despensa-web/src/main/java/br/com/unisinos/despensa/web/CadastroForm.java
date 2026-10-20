@@ -3,9 +3,7 @@ package br.com.unisinos.despensa.web;
 import br.com.unisinos.despensa.exception.ValidacaoException;
 import br.com.unisinos.despensa.service.LoteService;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,31 +23,18 @@ public class CadastroForm {
     private List<String> validades = new ArrayList<>();
 
     public int quantidadeInformada() {
-        int valor;
-        try {
-            valor = Integer.parseInt(quantidade == null ? "" : quantidade.trim());
-        } catch (NumberFormatException e) {
-            valor = 0;
-        }
-        if (valor <= 0) {
-            throw new ValidacaoException("Informe a quantidade (um número inteiro maior que zero).");
-        }
-        return valor;
+        return LeituraDeCampos.quantidadeInteira(quantidade);
     }
 
     public double precoInformado() {
-        try {
-            return new BigDecimal(precoUnitario == null ? "" : precoUnitario.trim().replace(',', '.')).doubleValue();
-        } catch (NumberFormatException e) {
-            throw new ValidacaoException("Informe o preço unitário (ex: 4,99).");
-        }
+        return LeituraDeCampos.preco(precoUnitario);
     }
 
     public Map<LocalDate, Integer> quantidadePorValidade() {
         int unidades = quantidadeInformada();
         if (mesmaValidade) {
             Map<LocalDate, Integer> unica = new LinkedHashMap<>();
-            unica.put(lerData(validade, "Informe a data de validade."), unidades);
+            unica.put(LeituraDeCampos.data(validade, "Informe a data de validade."), unidades);
             return unica;
         }
 
@@ -60,21 +45,10 @@ public class CadastroForm {
         List<LocalDate> datas = new ArrayList<>();
         for (int i = 0; i < unidades; i++) {
             String texto = i < validades.size() ? validades.get(i) : null;
-            datas.add(lerData(texto, "Informe a validade de todas as unidades (a unidade " + (i + 1)
+            datas.add(LeituraDeCampos.data(texto, "Informe a validade de todas as unidades (a unidade " + (i + 1)
                     + " está sem data)."));
         }
         return LoteService.agruparPorValidade(datas);
-    }
-
-    private static LocalDate lerData(String texto, String mensagemSeVazio) {
-        if (texto == null || texto.isBlank()) {
-            throw new ValidacaoException(mensagemSeVazio);
-        }
-        try {
-            return LocalDate.parse(texto.trim());
-        } catch (DateTimeParseException e) {
-            throw new ValidacaoException("Data de validade inválida.");
-        }
     }
 
     public String getCodigoBarras() {

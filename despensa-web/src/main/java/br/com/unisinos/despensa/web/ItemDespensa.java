@@ -44,8 +44,6 @@ public record ItemDespensa(String produtoId, String loteId, String nomeProduto, 
     }
 
     public String quantidadeFormatada() {
-        return quantidade == Math.rint(quantidade)
-                ? String.valueOf((long) quantidade)
-                : String.valueOf(quantidade).replace('.', ',');
+        return Formatos.quantidade(quantidade);
     }
 }

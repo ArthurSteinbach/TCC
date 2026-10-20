@@ -24,54 +24,9 @@
         <p class="mb-0">Nenhum item na despensa.</p>
     </div>
 
-    <div class="d-none d-md-block" th:unless="${#lists.isEmpty(itens)}">
-        <table class="table align-middle tabela-despensa">
-            <thead>
-            <tr>
-                <th>Produto</th>
-                <th class="text-end">Quantidade</th>
-                <th>Validade</th>
-                <th>Dias p/ vencer</th>
-                <th class="text-end">Valor (R$)</th>
-                <th class="text-end">Ações</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="item : ${itens}" th:class="${item.situacao()}">
-                <td th:text="${item.nomeProduto()}">Produto</td>
-                <td class="text-end" th:text="${item.quantidadeFormatada()}">1</td>
-                <td th:text="${#temporals.format(item.dataValidade(), 'dd/MM/yyyy')}">01/01/2026</td>
-                <td th:text="${item.prazo()}">10 dias</td>
-                <td class="text-end"
-                    th:text="${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}">0,00</td>
-                <td class="text-end text-nowrap">
-                    <div th:replace="~{fragments/acoes-lote :: acoes(${item})}"></div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="d-md-none" th:unless="${#lists.isEmpty(itens)}">
-        <div class="card mb-3 cartao-item" th:each="item : ${itens}" th:classappend="${item.situacao()}">
-            <div class="card-body">
-                <h2 class="h6 card-title mb-2" th:text="${item.nomeProduto()}">Produto</h2>
-                <dl class="row mb-3 small">
-                    <dt class="col-5">Quantidade</dt>
-                    <dd class="col-7 mb-1" th:text="${item.quantidadeFormatada()}">1</dd>
-                    <dt class="col-5">Validade</dt>
-                    <dd class="col-7 mb-1" th:text="${#temporals.format(item.dataValidade(), 'dd/MM/yyyy')}">01/01/2026</dd>
-                    <dt class="col-5">Prazo</dt>
-                    <dd class="col-7 mb-1" th:text="${item.prazo()}">10 dias</dd>
-                    <dt class="col-5">Valor</dt>
-                    <dd class="col-7 mb-0"
-                        th:text="|R$ ${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</dd>
-                </dl>
-                <div class="d-flex gap-2" th:replace="~{fragments/acoes-lote :: acoes(${item})}"></div>
-            </div>
-        </div>
-    </div>
-
+    <th:block th:unless="${#lists.isEmpty(itens)}">
+        <div th:replace="~{fragments/lista-lotes :: lista(${itens}, 'despensa')}"></div>
+    </th:block>
 </main>
 </body>
 </html>

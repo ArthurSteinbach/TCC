@@ -1,6 +1,7 @@
 package br.com.unisinos.despensa.service;
 
 import br.com.unisinos.despensa.exception.ValidacaoException;
+import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.Produto;
 import br.com.unisinos.despensa.repository.ProdutoRepository;
 import org.springframework.dao.DuplicateKeyException;
@@ -71,6 +72,12 @@ public class ProdutoService {
     public List<Produto> listar(String usuarioId) {
         validarUsuario(usuarioId);
         return produtoRepository.findByUsuarioIdOrderByNomeAsc(usuarioId);
+    }
+
+    public List<Produto> listarComLotesAtivos(String usuarioId) {
+        return listar(usuarioId).stream()
+                .filter(p -> p.getLotes().stream().anyMatch(Lote::isAtivo))
+                .toList();
     }
 
     public Produto editar(String usuarioId, String produtoId, String nome, String categoria) {

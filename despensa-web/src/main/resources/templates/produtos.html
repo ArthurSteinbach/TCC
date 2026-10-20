@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Produtos — Despensa</title>
+</head>
+<body>
+<main class="container py-3">
+    <h1 class="h4 mb-3">Produtos</h1>
+
+    <div class="alert alert-success" th:if="${sucesso}" th:text="${sucesso}">Mensagem de sucesso</div>
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}">Mensagem de erro</div>
+
+    <div class="text-center py-5" th:if="${#lists.isEmpty(produtos)}">
+        <p class="text-secondary">Nenhum produto cadastrado.</p>
+        <a class="btn btn-success btn-lg" th:href="@{/cadastrar}">Cadastrar uma compra</a>
+    </div>
+
+    <th:block th:unless="${#lists.isEmpty(produtos)}">
+        <div class="d-none d-md-block">
+            <table class="table align-middle bg-white">
+                <thead>
+                <tr>
+                    <th>Código de barras</th>
+                    <th>Nome</th>
+                    <th>Categoria</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="produto : ${produtos}">
+                    <td th:text="${produto.codigoBarras()}">789</td>
+                    <td th:text="${produto.nome()}">Produto</td>
+                    <td th:text="${produto.categoria()}">Categoria</td>
+                    <td class="text-end text-nowrap">
+                        <div th:replace="~{fragments/acoes-produto :: acoesProduto(${produto})}"></div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-md-none">
+            <div class="card mb-3" th:each="produto : ${produtos}">
+                <div class="card-body">
+                    <h2 class="h6 card-title mb-1" th:text="${produto.nome()}">Produto</h2>
+                    <p class="small text-secondary mb-3">
+                        <span th:text="${produto.codigoBarras()}">789</span>
+                        <th:block th:unless="${#strings.isEmpty(produto.categoria())}">
+                            · <span th:text="${produto.categoria()}">Categoria</span>
+                        </th:block>
+                    </p>
+                    <div th:replace="~{fragments/acoes-produto :: acoesProduto(${produto})}"></div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+</main>
+</body>
+</html>
