@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Não foi possível abrir esta página — Despensa</title>
+</head>
+<body>
+<main class="container py-5 pagina-estreita text-center">
+    <p class="display-6 text-secondary mb-2" th:if="${status != null and status >= 400 and status < 600}"
+       th:text="${status}">400</p>
+    <h1 class="h4">Não foi possível abrir esta página</h1>
+    <p class="text-secondary">Algo inesperado aconteceu. Volte para a despensa e tente de novo.</p>
+    <a class="btn btn-success btn-lg w-100" th:href="@{/}">Voltar para a despensa</a>
+</main>
+</body>
+</html>

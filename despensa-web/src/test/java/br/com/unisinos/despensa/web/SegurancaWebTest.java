@@ -53,7 +53,8 @@ class SegurancaWebTest extends TesteWebBase {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/login", "/usuarios/novo", "/saude", "/css/app.css", "/js/app.js"})
+    @ValueSource(strings = {"/login", "/usuarios/novo", "/saude", "/css/app.css", "/js/app.js", "/favicon.ico",
+            "/favicon.svg", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"})
     void loginCadastroEArquivosEstaticos_devemSerLiberados(String pagina) throws Exception {
         mockMvc.perform(get(pagina)).andExpect(status().isOk());
     }
