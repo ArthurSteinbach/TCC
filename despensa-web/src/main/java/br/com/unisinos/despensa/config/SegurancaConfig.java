@@ -16,7 +16,8 @@ public class SegurancaConfig {
     public SecurityFilterChain filtroDeSeguranca(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(requisicoes -> requisicoes
-                        .requestMatchers("/login", "/usuarios/novo", "/css/**", "/js/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/login", "/usuarios/novo", "/saude",
+                                "/css/**", "/js/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(login -> login
                         .loginPage("/login")

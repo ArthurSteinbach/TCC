@@ -1,0 +1,17 @@
+target/
+.mvn/
+mvnw
+mvnw.cmd
+rodar.cmd
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.iml
+.env
+.env.*
+*.env
+*.log
+Dockerfile
+.dockerignore
