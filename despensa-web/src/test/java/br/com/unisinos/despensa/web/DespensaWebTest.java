@@ -148,7 +148,7 @@ class DespensaWebTest extends TesteWebBase {
 
         mockMvc.perform(get("/").with(user(ANA)))
                 .andExpect(content().string(not(containsString("/consumir?produtoId="))))
-                .andExpect(content().string(containsString(">Descartado<")))
+                .andExpect(content().string(containsString(">Descartar<")))
                 .andExpect(content().string(containsString(">Editar<")));
     }
 
@@ -159,19 +159,20 @@ class DespensaWebTest extends TesteWebBase {
 
         mockMvc.perform(post("/lotes/{p}/{l}/descartar", produto.getId(), lote.getId()).with(user(ANA)).with(csrf()))
                 .andExpect(redirectedUrl("/"))
-                .andExpect(flash().attribute("sucesso", "Item marcado como descartado."));
+                .andExpect(flash().attribute("sucesso", "Descarte registrado: 2 de 2 unidades de \"Feijão\"."));
 
         assertEquals(StatusLote.DESCARTADO, statusDoLote(ANA.getId(), produto, lote));
         assertEquals(16.0, loteService.calcularPerdaFinanceiraTotal(ANA.getId()), 0.001);
     }
 
     @Test
-    void botoesDosLotes_devemPedirConfirmacao() throws Exception {
+    void botaoDescartar_deveAbrirATelaQuePedeAQuantidade() throws Exception {
         Produto produto = produtoService.cadastrar(ANA.getId(), "111", "Feijão", null);
-        loteService.cadastrar(ANA.getId(), produto.getId(), 1, 8.0, HOJE.plusDays(10));
+        Lote lote = lote(ANA, produto, 1, 8.0, HOJE.plusDays(10));
 
         mockMvc.perform(get("/").with(user(ANA)))
-                .andExpect(content().string(containsString("como descartado (vencido)?")));
+                .andExpect(content().string(containsString(
+                        "href=\"/lotes/" + produto.getId() + "/" + lote.getId() + "/descartar?origem=despensa\"")));
     }
 
     @Test

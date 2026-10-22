@@ -1,17 +1,11 @@
 package br.com.unisinos.despensa.web;
 
-import br.com.unisinos.despensa.exception.ValidacaoException;
 import br.com.unisinos.despensa.seguranca.UsuarioLogado;
 import br.com.unisinos.despensa.service.LoteService;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -52,26 +46,5 @@ public class DespensaController {
                 .map(l -> ItemDespensa.de(l, hoje))
                 .toList());
         return "alertas";
-    }
-
-    @PostMapping("/lotes/{produtoId}/{loteId}/descartar")
-    public String descartar(@AuthenticationPrincipal UsuarioLogado usuario, @PathVariable String produtoId,
-                            @PathVariable String loteId, @RequestParam(defaultValue = "despensa") String origem,
-                            RedirectAttributes redirecionamento) {
-        return darBaixa(redirecionamento, origem, "Item marcado como descartado.",
-                () -> loteService.descartar(usuario.getId(), produtoId, loteId));
-    }
-
-    private String darBaixa(RedirectAttributes redirecionamento, String origem, String mensagemDeSucesso,
-                            Runnable baixa) {
-        try {
-            baixa.run();
-            redirecionamento.addFlashAttribute("sucesso", mensagemDeSucesso);
-        } catch (ValidacaoException e) {
-            redirecionamento.addFlashAttribute("erro", e.getMessage());
-        } catch (OptimisticLockingFailureException e) {
-            redirecionamento.addFlashAttribute("erro", MENSAGEM_ALTERACAO_CONCORRENTE);
-        }
-        return Destinos.redirecionar(origem);
     }
 }

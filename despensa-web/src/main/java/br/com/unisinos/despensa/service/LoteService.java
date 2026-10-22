@@ -112,6 +112,22 @@ public class LoteService {
         darBaixa(usuarioId, produtoId, loteId, StatusLote.DESCARTADO);
     }
 
+    public Lote descartar(String usuarioId, String produtoId, String loteId, double quantidade) {
+        if (quantidade <= 0) {
+            throw new ValidacaoException("A quantidade a descartar deve ser maior que zero.");
+        }
+        Produto produto = produtoService.buscarPorId(usuarioId, produtoId);
+        Lote lote = buscarLoteAtivo(produto, loteId);
+        if (quantidade > lote.getQuantidade()) {
+            throw new ValidacaoException("A quantidade a descartar não pode ser maior que a do lote ("
+                    + formatar(lote.getQuantidade()) + ").");
+        }
+
+        Lote descartado = baixar(produto, lote, quantidade, StatusLote.DESCARTADO, agora());
+        produtoRepository.save(produto);
+        return descartado;
+    }
+
     public List<LoteDoProduto> listarAtivosFEFO(String usuarioId) {
         return listarLotes(usuarioId, Lote::isAtivo).stream()
                 .sorted(ORDEM_FEFO)
@@ -152,17 +168,7 @@ public class LoteService {
 
         for (ItemConsumo item : plano) {
             Lote lote = produto.buscarLote(item.loteId()).orElseThrow();
-            if (item.consomeLoteInteiro()) {
-                lote.setStatus(StatusLote.CONSUMIDO);
-                lote.setDataBaixa(agora);
-            } else {
-                lote.setQuantidade(item.quantidadeRestante());
-                Lote consumido = new Lote(novoId(), item.quantidadeConsumida(), lote.getPrecoUnitario(),
-                        lote.getDataValidade(), lote.getDataCadastro());
-                consumido.setStatus(StatusLote.CONSUMIDO);
-                consumido.setDataBaixa(agora);
-                produto.getLotes().add(consumido);
-            }
+            baixar(produto, lote, item.quantidadeConsumida(), StatusLote.CONSUMIDO, agora);
         }
 
         produtoRepository.save(produto);
@@ -206,6 +212,21 @@ public class LoteService {
             restante -= consumida;
         }
         return plano;
+    }
+
+    private Lote baixar(Produto produto, Lote lote, double quantidade, StatusLote novoStatus, LocalDateTime agora) {
+        if (quantidade >= lote.getQuantidade()) {
+            lote.setStatus(novoStatus);
+            lote.setDataBaixa(agora);
+            return lote;
+        }
+        lote.setQuantidade(lote.getQuantidade() - quantidade);
+        Lote baixado = new Lote(novoId(), quantidade, lote.getPrecoUnitario(), lote.getDataValidade(),
+                lote.getDataCadastro());
+        baixado.setStatus(novoStatus);
+        baixado.setDataBaixa(agora);
+        produto.getLotes().add(baixado);
+        return baixado;
     }
 
     private void darBaixa(String usuarioId, String produtoId, String loteId, StatusLote novoStatus) {

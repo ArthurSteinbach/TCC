@@ -41,7 +41,7 @@ class AlertasWebTest extends TesteWebBase {
         assertTrue(!html.contains("<tr class=\"item-normal\""));
         assertTrue(html.contains("/consumir?produtoId=" + vencendo.getId()));
         assertTrue(!html.contains("/consumir?produtoId=" + vencido.getId()));
-        assertTrue(html.contains(">Descartado<"));
+        assertTrue(html.contains(">Descartar<"));
         assertTrue(html.contains("origem=alertas"));
         assertTrue(html.indexOf("Iogurte vencido") < html.indexOf("Leite vencendo"));
     }
@@ -74,7 +74,7 @@ class AlertasWebTest extends TesteWebBase {
         mockMvc.perform(post("/lotes/{p}/{l}/descartar", vencido.getId(), lote.getId())
                         .with(user(ANA)).with(csrf()).param("origem", "alertas"))
                 .andExpect(redirectedUrl("/alertas"))
-                .andExpect(flash().attribute("sucesso", "Item marcado como descartado."));
+                .andExpect(flash().attribute("sucesso", "Descarte registrado: 2 de 2 unidades de \"Iogurte\"."));
 
         assertEquals(StatusLote.DESCARTADO, recarregar(ANA, vencido, lote).getStatus());
     }
@@ -85,7 +85,7 @@ class AlertasWebTest extends TesteWebBase {
         lote(ANA, vencendo, 1, 4.0, HOJE.plusDays(1));
 
         mockMvc.perform(get("/alertas").with(user(ANA)))
-                .andExpect(content().string(containsString("name=\"origem\" value=\"alertas\"")));
+                .andExpect(content().string(containsString("descartar?origem=alertas")));
     }
 
     @Test

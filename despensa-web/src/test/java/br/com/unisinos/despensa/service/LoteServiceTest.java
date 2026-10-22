@@ -166,6 +166,50 @@ class LoteServiceTest {
     }
 
     @Test
+    void descartarParte_deveManterORestanteAtivoECriarRegistroDescartado() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 4, 2.5, HOJE.plusDays(3));
+
+        Lote descartado = loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId(), 1);
+
+        Lote original = ambiente.lote(USUARIO, produtoDeTeste, lote.getId());
+        assertEquals(StatusLote.ATIVO, original.getStatus());
+        assertEquals(3, original.getQuantidade());
+        Lote registro = ambiente.lote(USUARIO, produtoDeTeste, descartado.getId());
+        assertEquals(StatusLote.DESCARTADO, registro.getStatus());
+        assertEquals(1, registro.getQuantidade());
+        assertEquals(lote.getDataValidade(), registro.getDataValidade());
+        assertEquals(2.5, registro.getPrecoUnitario());
+        assertEquals(AGORA, registro.getDataBaixa());
+        assertEquals(2.5, loteService.calcularPerdaFinanceiraTotal(USUARIO), 0.001);
+    }
+
+    @Test
+    void descartarOLoteInteiroPelaQuantidade_deveSoMudarOStatus() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 4, 2.5, HOJE.plusDays(3));
+
+        loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId(), 4);
+
+        List<Lote> lotes = ambiente.lotes(USUARIO, produtoDeTeste);
+        assertEquals(1, lotes.size());
+        assertEquals(StatusLote.DESCARTADO, lotes.get(0).getStatus());
+        assertEquals(10.0, loteService.calcularPerdaFinanceiraTotal(USUARIO), 0.001);
+    }
+
+    @Test
+    void descartarMaisQueOLoteOuZero_deveSerRecusadoSemAlterarNada() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 4, 2.5, HOJE.plusDays(3));
+        List<String> antes = resumoDosLotes();
+
+        ValidacaoException erro = assertThrows(ValidacaoException.class,
+                () -> loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId(), 5));
+        assertThrows(ValidacaoException.class,
+                () -> loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId(), 0));
+
+        assertTrue(erro.getMessage().contains("(4)"));
+        assertEquals(antes, resumoDosLotes());
+    }
+
+    @Test
     void listarDescartados_deveTrazerSoOsLotesDescartados() {
         Lote descartado = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 2, 4.0, HOJE.plusDays(1));
         Lote consumido = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 4.0, HOJE.plusDays(2));

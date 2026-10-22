@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Descartar — Despensa</title>
+</head>
+<body>
+<main class="container py-3 pagina-formulario">
+    <h1 class="h4 mb-1">Descartar</h1>
+    <p class="text-secondary mb-3">
+        <strong th:text="${produto.nome}">Produto</strong> ·
+        validade <span th:text="${#temporals.format(lote.dataValidade, 'dd/MM/yyyy')}">01/01/2026</span> ·
+        <span th:text="${maximo}">1</span> no lote
+    </p>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}" role="alert">Mensagem de erro</div>
+
+    <form th:action="@{/lotes/{p}/{l}/descartar(p=${produto.id},l=${lote.id})}" method="post" class="card"
+          th:data-confirmacao="${modeloConfirmacao}">
+        <div class="card-body">
+            <input type="hidden" name="origem" th:value="${origem}">
+            <div class="mb-4">
+                <label for="quantidade" class="form-label">Quantas unidades vão para o lixo?</label>
+                <input type="number" class="form-control form-control-lg" id="quantidade" name="quantidade"
+                       th:value="${quantidade}" min="1" th:max="${maximo}" step="1" inputmode="numeric" required>
+                <div class="form-text">O restante continua na despensa.</div>
+            </div>
+            <button type="submit" class="btn btn-danger btn-lg w-100 mb-2">Descartar</button>
+            <a class="btn btn-outline-secondary w-100" th:href="@{${voltarPara}}">Cancelar</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

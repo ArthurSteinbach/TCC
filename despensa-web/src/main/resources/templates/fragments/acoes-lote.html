@@ -4,12 +4,8 @@
 <div class="d-flex gap-2 justify-content-end acoes-item" th:fragment="acoes(item, origem)">
     <a class="btn btn-success flex-fill" th:unless="${item.vencido()}"
        th:href="@{/consumir(produtoId=${item.produtoId()},quantidade=1,origem=${origem})}">Consumir</a>
-    <form method="post" class="flex-fill"
-          th:action="@{/lotes/{p}/{l}/descartar(p=${item.produtoId()},l=${item.loteId()})}"
-          th:data-confirmacao="|Marcar &quot;${item.nomeProduto()}&quot; como descartado (vencido)?|">
-        <input type="hidden" name="origem" th:value="${origem}">
-        <button type="submit" class="btn btn-outline-danger w-100">Descartado</button>
-    </form>
+    <a class="btn btn-outline-danger flex-fill"
+       th:href="@{/lotes/{p}/{l}/descartar(p=${item.produtoId()},l=${item.loteId()},origem=${origem})}">Descartar</a>
     <a class="btn btn-outline-secondary flex-fill"
        th:href="@{/lotes/{p}/{l}/editar(p=${item.produtoId()},l=${item.loteId()})}">Editar</a>
 </div>
