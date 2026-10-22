@@ -75,7 +75,8 @@
                     <input type="hidden" name="produtoId" th:value="${produtoSelecionado}">
                     <input type="hidden" name="quantidade" th:value="${quantidadePrevia}">
                     <input type="hidden" name="origem" th:value="${origem}" th:unless="${#strings.isEmpty(origem)}">
-                    <button type="submit" class="btn btn-success btn-lg w-100 mb-2">Confirmar consumo</button>
+                    <button type="submit" class="btn btn-success btn-lg w-100 mb-2" id="confirmarConsumo"
+                            th:text="|Sim, consumir ${quantidadePrevia}|">Sim, consumir</button>
                 </form>
                 <a class="btn btn-outline-secondary w-100" th:href="@{${voltarPara}}">Cancelar</a>
             </div>

@@ -70,7 +70,7 @@ class ConsumoWebTest extends TesteWebBase {
                 .andExpect(content().string(containsString("Confira antes de confirmar")))
                 .andExpect(content().string(containsString("O lote inteiro será usado.")))
                 .andExpect(content().string(containsString("Ficam 2 neste lote.")))
-                .andExpect(content().string(containsString("Confirmar consumo")))
+                .andExpect(content().string(containsString("Sim, consumir 5")))
                 .andReturn().getResponse().getContentAsString();
 
         assertTrue(html.indexOf("20/10/2026") < html.indexOf("07/11/2026"), "FEFO: o lote que vence antes vem primeiro");
@@ -126,7 +126,7 @@ class ConsumoWebTest extends TesteWebBase {
 
         mockMvc.perform(get("/consumir").with(user(ANA)).param("produtoId", leite.getId()).param("quantidade", "4"))
                 .andExpect(content().string(containsString("há apenas 3 unidade(s) dentro da validade")))
-                .andExpect(content().string(not(containsString("Confirmar consumo"))));
+                .andExpect(content().string(not(containsString("Sim, consumir"))));
         mockMvc.perform(post("/consumir").with(user(ANA)).with(csrf())
                         .param("produtoId", leite.getId()).param("quantidade", "4"))
                 .andExpect(status().isOk())

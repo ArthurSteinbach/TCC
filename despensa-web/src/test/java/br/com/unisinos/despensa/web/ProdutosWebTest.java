@@ -38,7 +38,7 @@ class ProdutosWebTest extends TesteWebBase {
         produtoService.cadastrar(ANA.getId(), "111", "Leite", null);
 
         mockMvc.perform(get("/produtos").with(user(ANA)))
-                .andExpect(content().string(containsString("data-confirmacao=\"Excluir o produto &quot;Leite&quot;?\"")));
+                .andExpect(content().string(containsString("data-confirmacao=\"Excluir o produto &quot;Leite&quot; (código 111)? Isso não pode ser desfeito.\"")));
     }
 
     @Test
