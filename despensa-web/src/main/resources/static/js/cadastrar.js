@@ -46,6 +46,8 @@
 
     const leitor = new LeitorCodigoBarras({
         video: elemento('videoCamera'),
+        seletorCamera: elemento('seletorCamera'),
+        dicaImagemPreta: elemento('dicaImagemPreta'),
         aoLer: (codigo) => {
             fecharCamera();
             campoCodigo.value = codigo;
@@ -223,7 +225,6 @@
             atualizarValidades();
         }
     });
-    window.addEventListener('pagehide', () => leitor.parar());
 
     atualizarValidades();
 })();

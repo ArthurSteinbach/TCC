@@ -7,9 +7,16 @@
 </button>
 
 <div class="area-camera mb-3" id="areaCamera" hidden>
+    <div class="seletor-camera mb-2" hidden>
+        <label for="seletorCamera" class="form-label small mb-1">Câmera</label>
+        <select class="form-select" id="seletorCamera"></select>
+    </div>
     <div class="visor-camera">
         <video id="videoCamera" playsinline muted autoplay></video>
         <div class="mira-camera"></div>
+    </div>
+    <div class="alert alert-warning py-2 my-2" id="dicaImagemPreta" role="status" hidden>
+        A imagem está preta? Tente escolher outra câmera na lista.
     </div>
     <p class="small text-secondary my-2">Aponte a câmera para o código de barras e segure firme.</p>
     <button type="button" class="btn btn-outline-secondary w-100" id="btnCancelarLeitura">
@@ -24,6 +31,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js"
         integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf"
         crossorigin="anonymous"></script>
+<script th:src="@{/js/escolha-camera.js}"></script>
 <script th:src="@{/js/leitor-codigo-barras.js}"></script>
 </th:block>
 </body>

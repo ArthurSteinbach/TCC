@@ -29,6 +29,8 @@
 
     const leitor = new LeitorCodigoBarras({
         video: elemento('videoCamera'),
+        seletorCamera: elemento('seletorCamera'),
+        dicaImagemPreta: elemento('dicaImagemPreta'),
         aoLer: (codigo) => {
             fecharCamera();
             const opcao = Array.from(seletor.options).find((o) => o.dataset.codigo === codigo);
@@ -70,7 +72,6 @@
         leitor.iniciar();
     });
     btnCancelar.addEventListener('click', fecharCamera);
-    window.addEventListener('pagehide', () => leitor.parar());
 
     const secaoPrevia = elemento('secaoPrevia');
     if (secaoPrevia) {
