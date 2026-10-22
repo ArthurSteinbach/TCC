@@ -86,13 +86,13 @@ class DespensaWebTest extends TesteWebBase {
                 .andReturn().getResponse().getContentAsString();
 
         for (String item : new String[]{">Despensa<", ">Cadastrar<", ">Consumir<", ">Alertas<", ">Relatório<",
-                ">Produtos<", ">Sair<"}) {
+                ">Histórico<", ">Produtos<", ">Sair<"}) {
             assertTrue(html.contains(item), "Menu sem o item " + item);
         }
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/produtos"})
+    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos"})
     void todosOsItensDoMenu_devemAbrirUmaPaginaDeVerdade(String pagina) throws Exception {
         mockMvc.perform(get(pagina).with(user(ANA)))
                 .andExpect(status().isOk())

@@ -31,7 +31,7 @@ class SegurancaWebTest extends TesteWebBase {
     private PasswordEncoder codificador;
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/produtos"})
+    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos"})
     void paginaProtegida_semLogin_deveRedirecionarParaOLogin(String pagina) throws Exception {
         mockMvc.perform(get(pagina))
                 .andExpect(status().is3xxRedirection())

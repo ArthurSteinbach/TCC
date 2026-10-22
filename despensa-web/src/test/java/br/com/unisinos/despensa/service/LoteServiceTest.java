@@ -210,6 +210,22 @@ class LoteServiceTest {
     }
 
     @Test
+    void listarHistorico_deveTrazerConsumidosEDescartadosComFiltroOpcional() {
+        Lote consumido = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 4.0, HOJE.plusDays(1));
+        Lote descartado = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 4.0, HOJE.plusDays(2));
+        loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 4.0, HOJE.plusDays(3));
+        loteService.consumir(USUARIO, produtoDeTeste.getId(), consumido.getId());
+        loteService.descartar(USUARIO, produtoDeTeste.getId(), descartado.getId());
+
+        assertEquals(2, loteService.listarHistorico(USUARIO, null).size());
+        assertEquals(List.of(consumido.getId()), loteService.listarHistorico(USUARIO, StatusLote.CONSUMIDO).stream()
+                .map(l -> l.lote().getId()).toList());
+        assertEquals(List.of(descartado.getId()), loteService.listarHistorico(USUARIO, StatusLote.DESCARTADO).stream()
+                .map(l -> l.lote().getId()).toList());
+        assertTrue(loteService.listarHistorico(USUARIO, StatusLote.ATIVO).isEmpty());
+    }
+
+    @Test
     void listarDescartados_deveTrazerSoOsLotesDescartados() {
         Lote descartado = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 2, 4.0, HOJE.plusDays(1));
         Lote consumido = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 4.0, HOJE.plusDays(2));

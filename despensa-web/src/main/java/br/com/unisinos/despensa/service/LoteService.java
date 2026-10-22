@@ -148,6 +148,16 @@ public class LoteService {
                 .toList();
     }
 
+    public List<LoteDoProduto> listarHistorico(String usuarioId, StatusLote situacao) {
+        Predicate<Lote> filtro = situacao == null
+                ? l -> l.getStatus() == StatusLote.CONSUMIDO || l.getStatus() == StatusLote.DESCARTADO
+                : l -> l.getStatus() == situacao && situacao != StatusLote.ATIVO;
+        return listarLotes(usuarioId, filtro).stream()
+                .sorted(Comparator.comparing((LoteDoProduto l) -> l.lote().getDataBaixa(),
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
     public double calcularPerdaFinanceiraTotal(String usuarioId) {
         return listarDescartados(usuarioId).stream()
                 .mapToDouble(l -> l.lote().getValorTotal())

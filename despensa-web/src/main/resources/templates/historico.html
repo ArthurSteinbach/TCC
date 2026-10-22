@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Histórico — Despensa</title>
+</head>
+<body>
+<main class="container py-3">
+    <h1 class="h4 mb-3">Histórico</h1>
+
+    <div class="alert alert-success" th:if="${sucesso}" th:text="${sucesso}">Mensagem de sucesso</div>
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}">Mensagem de erro</div>
+
+    <nav class="btn-group w-100 mb-3" role="group" aria-label="Filtrar por situação">
+        <a class="btn" th:href="@{/historico}"
+           th:classappend="${filtro == ''} ? 'btn-success' : 'btn-outline-success'">Todos</a>
+        <a class="btn" th:href="@{/historico(situacao='consumidos')}"
+           th:classappend="${filtro == 'consumidos'} ? 'btn-success' : 'btn-outline-success'">Consumidos</a>
+        <a class="btn" th:href="@{/historico(situacao='descartados')}"
+           th:classappend="${filtro == 'descartados'} ? 'btn-success' : 'btn-outline-success'">Descartados</a>
+    </nav>
+
+    <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(itens)}">
+        <p class="mb-0">Nenhum item no histórico.</p>
+    </div>
+
+    <th:block th:unless="${#lists.isEmpty(itens)}">
+        <div class="d-none d-md-block">
+            <table class="table align-middle bg-white">
+                <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th class="text-end">Quantidade</th>
+                    <th class="text-end">Valor (R$)</th>
+                    <th>Situação</th>
+                    <th>Data da baixa</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${itens}" class="linha-historico">
+                    <td th:text="${item.nomeProduto()}">Produto</td>
+                    <td class="text-end" th:text="${item.quantidadeFormatada()}">1</td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}">0,00</td>
+                    <td><span class="badge" th:classappend="${item.descartado()} ? 'text-bg-danger' : 'text-bg-success'"
+                              th:text="${item.situacao()}">Consumido</span></td>
+                    <td th:text="${item.dataBaixa() != null} ? ${#temporals.format(item.dataBaixa(), 'dd/MM/yyyy HH:mm')} : '-'">
+                        01/01/2026 10:00
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-md-none">
+            <div class="card mb-2" th:each="item : ${itens}">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between gap-2">
+                        <strong th:text="${item.nomeProduto()}">Produto</strong>
+                        <span class="badge align-self-start"
+                              th:classappend="${item.descartado()} ? 'text-bg-danger' : 'text-bg-success'"
+                              th:text="${item.situacao()}">Consumido</span>
+                    </div>
+                    <div class="small text-secondary">
+                        <span th:text="|${item.quantidadeFormatada()} un.|">1 un.</span> ·
+                        <span th:text="|R$ ${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</span> ·
+                        <span th:text="${item.dataBaixa() != null} ? ${#temporals.format(item.dataBaixa(), 'dd/MM/yyyy HH:mm')} : '-'">01/01/2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</main>
+</body>
+</html>

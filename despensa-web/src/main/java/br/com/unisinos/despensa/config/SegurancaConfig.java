@@ -22,7 +22,7 @@ import java.util.List;
 public class SegurancaConfig {
 
     private static final List<String> PAGINAS_DO_MENU =
-            List.of("/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/produtos");
+            List.of("/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos");
 
     @Bean
     public SecurityFilterChain filtroDeSeguranca(HttpSecurity http) throws Exception {
