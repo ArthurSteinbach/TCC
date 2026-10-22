@@ -65,6 +65,41 @@ class RelatorioWebTest extends TesteWebBase {
                 .andExpect(content().string(containsString("R$ 4,00")));
     }
 
+    @Test
+    void relatorio_deveMostrarTotaisDeConsumoEDescarteEOPercentualDeDesperdicio() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "1", "Água Mineral", null);
+        lote(ANA, agua, 3, 10.0, HOJE.plusDays(5));
+        Lote vaiPerder = lote(ANA, agua, 1, 10.0, HOJE.plusDays(1));
+        loteService.descartar(ANA.getId(), agua.getId(), vaiPerder.getId(), 1);
+        loteService.consumirPorFEFO(ANA.getId(), agua.getId(), 2);
+        Produto doBruno = produtoService.cadastrar(BRUNO.getId(), "2", "Café do Bruno", null);
+        Lote doOutro = lote(BRUNO, doBruno, 5, 100.0, HOJE.plusDays(3));
+        loteService.descartar(BRUNO.getId(), doBruno.getId(), doOutro.getId());
+
+        String html = mockMvc.perform(get("/relatorio").with(user(ANA)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(html.contains("Total consumido"));
+        assertTrue(html.contains("R$ 20,00"));
+        assertTrue(html.contains("Total descartado"));
+        assertTrue(html.contains("R$ 10,00"));
+        assertTrue(html.contains("33,3%"));
+        assertTrue(!html.contains("R$ 500,00"));
+    }
+
+    @Test
+    void relatorioSemNadaConsumidoNemDescartado_deveMostrarMensagemEmVezDoPercentual() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "1", "Água Mineral", null);
+        lote(ANA, agua, 3, 10.0, HOJE.plusDays(5));
+
+        mockMvc.perform(get("/relatorio").with(user(ANA)))
+                .andExpect(content().string(containsString(
+                        "Ainda não há itens consumidos nem descartados para calcular o desperdício.")))
+                .andExpect(content().string(not(containsString("%"))))
+                .andExpect(content().string(not(containsString("NaN"))));
+    }
+
     private static Lote descartado(String id, int quantidade, double preco, LocalDateTime dataBaixa) {
         Lote lote = new Lote(id, quantidade, preco, HOJE.minusDays(1), LocalDateTime.of(2026, 9, 1, 10, 0));
         lote.setStatus(StatusLote.DESCARTADO);

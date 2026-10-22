@@ -2,6 +2,7 @@ package br.com.unisinos.despensa.web;
 
 import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.LoteDoProduto;
+import br.com.unisinos.despensa.model.ResumoDesperdicio;
 import br.com.unisinos.despensa.seguranca.UsuarioLogado;
 import br.com.unisinos.despensa.service.LoteService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Controller
 public class RelatorioController {
@@ -30,6 +32,11 @@ public class RelatorioController {
         model.addAttribute("menu", "relatorio");
         model.addAttribute("descartados", descartados);
         model.addAttribute("perdaTotal", descartados.stream().mapToDouble(ItemRelatorio::valorTotal).sum());
+        ResumoDesperdicio resumo = loteService.resumirDesperdicio(usuario.getId());
+        model.addAttribute("resumo", resumo);
+        model.addAttribute("percentualDesperdicio", resumo.percentualDesperdicio().isPresent()
+                ? String.format(Locale.of("pt", "BR"), "%.1f%%", resumo.percentualDesperdicio().getAsDouble())
+                : null);
         return "relatorio";
     }
 

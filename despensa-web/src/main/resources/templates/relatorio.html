@@ -16,6 +16,39 @@
         </div>
     </div>
 
+    <div class="row g-2 mb-3" id="resumoDesperdicio" th:if="${resumo.temDados()}">
+        <div class="col-12 col-sm-4">
+            <div class="card h-100">
+                <div class="card-body py-2">
+                    <p class="small text-secondary mb-0">Total consumido</p>
+                    <p class="h5 mb-0 text-success"
+                       th:text="|R$ ${#numbers.formatDecimal(resumo.totalConsumido(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-sm-4">
+            <div class="card h-100">
+                <div class="card-body py-2">
+                    <p class="small text-secondary mb-0">Total descartado</p>
+                    <p class="h5 mb-0 text-danger"
+                       th:text="|R$ ${#numbers.formatDecimal(resumo.totalDescartado(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-sm-4">
+            <div class="card h-100">
+                <div class="card-body py-2">
+                    <p class="small text-secondary mb-0">Desperdício</p>
+                    <p class="h5 mb-0" th:text="${percentualDesperdicio}">0,0%</p>
+                    <p class="small text-secondary mb-0">do valor que saiu da despensa</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="text-secondary" id="semDadosDesperdicio" th:unless="${resumo.temDados()}">
+        Ainda não há itens consumidos nem descartados para calcular o desperdício.
+    </p>
+
     <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(descartados)}">
         <p class="mb-0">Nenhum item descartado.</p>
     </div>

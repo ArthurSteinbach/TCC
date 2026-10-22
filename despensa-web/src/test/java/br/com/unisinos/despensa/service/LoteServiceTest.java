@@ -5,6 +5,7 @@ import br.com.unisinos.despensa.model.ItemConsumo;
 import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.LoteDoProduto;
 import br.com.unisinos.despensa.model.Produto;
+import br.com.unisinos.despensa.model.ResumoDesperdicio;
 import br.com.unisinos.despensa.model.StatusLote;
 import br.com.unisinos.despensa.repository.ProdutoRepositoryEmMemoria;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,7 @@ import static br.com.unisinos.despensa.service.AmbienteDeTeste.AGORA;
 import static br.com.unisinos.despensa.service.AmbienteDeTeste.HOJE;
 import static br.com.unisinos.despensa.service.AmbienteDeTeste.USUARIO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -293,6 +295,38 @@ class LoteServiceTest {
                 () -> loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), lote.getId()));
         assertThrows(ValidacaoException.class,
                 () -> loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), "nao-existe"));
+    }
+
+    @Test
+    void resumirDesperdicio_deveCalcularDescartadoSobreConsumidoMaisDescartado() {
+        Lote consumido = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 3, 10.0, HOJE.plusDays(5));
+        Lote descartado = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 10.0, HOJE.plusDays(1));
+        loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 9, 10.0, HOJE.plusDays(9));
+        loteService.consumir(USUARIO, produtoDeTeste.getId(), consumido.getId());
+        loteService.descartar(USUARIO, produtoDeTeste.getId(), descartado.getId());
+
+        ResumoDesperdicio resumo = loteService.resumirDesperdicio(USUARIO);
+
+        assertTrue(resumo.temDados());
+        assertEquals(30.0, resumo.totalConsumido(), 0.001);
+        assertEquals(10.0, resumo.totalDescartado(), 0.001);
+        assertEquals(25.0, resumo.percentualDesperdicio().getAsDouble(), 0.001);
+    }
+
+    @Test
+    void resumirDesperdicio_semNadaConsumidoNemDescartado_naoDeveTerPercentual() {
+        loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 3, 10.0, HOJE.plusDays(5));
+
+        ResumoDesperdicio resumo = loteService.resumirDesperdicio(USUARIO);
+
+        assertFalse(resumo.temDados());
+        assertTrue(resumo.percentualDesperdicio().isEmpty());
+    }
+
+    @Test
+    void resumirDesperdicio_soComDescartesOuSoComConsumos_deveDar100Ou0PorCento() {
+        assertEquals(100.0, new ResumoDesperdicio(0, 8).percentualDesperdicio().getAsDouble(), 0.001);
+        assertEquals(0.0, new ResumoDesperdicio(8, 0).percentualDesperdicio().getAsDouble(), 0.001);
     }
 
     @Test

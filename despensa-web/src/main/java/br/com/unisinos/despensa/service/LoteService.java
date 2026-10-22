@@ -5,6 +5,7 @@ import br.com.unisinos.despensa.model.ItemConsumo;
 import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.LoteDoProduto;
 import br.com.unisinos.despensa.model.Produto;
+import br.com.unisinos.despensa.model.ResumoDesperdicio;
 import br.com.unisinos.despensa.model.StatusLote;
 import br.com.unisinos.despensa.repository.ProdutoRepository;
 import br.com.unisinos.despensa.util.Constantes;
@@ -187,6 +188,19 @@ public class LoteService {
                 .sorted(Comparator.comparing((LoteDoProduto l) -> l.lote().getDataBaixa(),
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    public ResumoDesperdicio resumirDesperdicio(String usuarioId) {
+        double consumido = 0;
+        double descartado = 0;
+        for (LoteDoProduto item : listarHistorico(usuarioId, null)) {
+            if (item.lote().getStatus() == StatusLote.DESCARTADO) {
+                descartado += item.lote().getValorTotal();
+            } else {
+                consumido += item.lote().getValorTotal();
+            }
+        }
+        return new ResumoDesperdicio(consumido, descartado);
     }
 
     public double calcularPerdaFinanceiraTotal(String usuarioId) {
