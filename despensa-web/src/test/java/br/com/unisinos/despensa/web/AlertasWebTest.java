@@ -39,7 +39,10 @@ class AlertasWebTest extends TesteWebBase {
         assertTrue(html.contains("<tr class=\"item-vencido\""));
         assertTrue(html.contains("<tr class=\"item-vencendo\""));
         assertTrue(!html.contains("<tr class=\"item-normal\""));
-        assertTrue(html.contains(">Consumido<") && html.contains(">Descartado<"));
+        assertTrue(html.contains("/consumir?produtoId=" + vencendo.getId()));
+        assertTrue(!html.contains("/consumir?produtoId=" + vencido.getId()));
+        assertTrue(html.contains(">Descartado<"));
+        assertTrue(html.contains("origem=alertas"));
         assertTrue(html.indexOf("Iogurte vencido") < html.indexOf("Leite vencendo"));
     }
 
@@ -86,11 +89,25 @@ class AlertasWebTest extends TesteWebBase {
     }
 
     @Test
+    void consumirAPartirDosAlertas_deveVoltarParaOsAlertas() throws Exception {
+        Produto leite = produtoService.cadastrar(ANA.getId(), "2", "Leite", null);
+        lote(ANA, leite, 3, 4.0, HOJE.plusDays(2));
+
+        mockMvc.perform(get("/consumir").with(user(ANA)).param("produtoId", leite.getId()).param("quantidade", "1")
+                        .param("origem", "alertas"))
+                .andExpect(content().string(containsString("name=\"origem\" value=\"alertas\"")))
+                .andExpect(content().string(containsString("href=\"/alertas\">Cancelar")));
+        mockMvc.perform(post("/consumir").with(user(ANA)).with(csrf()).param("produtoId", leite.getId())
+                        .param("quantidade", "1").param("origem", "alertas"))
+                .andExpect(redirectedUrl("/alertas"));
+    }
+
+    @Test
     void origemDesconhecida_deveVoltarParaADespensaSemSeguirEnderecosExternos() throws Exception {
         Produto leite = produtoService.cadastrar(ANA.getId(), "2", "Leite", null);
         Lote lote = lote(ANA, leite, 1, 4.0, HOJE.plusDays(1));
 
-        mockMvc.perform(post("/lotes/{p}/{l}/consumir", leite.getId(), lote.getId())
+        mockMvc.perform(post("/lotes/{p}/{l}/descartar", leite.getId(), lote.getId())
                         .with(user(ANA)).with(csrf()).param("origem", "https://site-malicioso.example"))
                 .andExpect(redirectedUrl("/"));
     }

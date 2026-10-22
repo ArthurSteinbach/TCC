@@ -34,6 +34,7 @@
             const opcao = Array.from(seletor.options).find((o) => o.dataset.codigo === codigo);
             if (opcao) {
                 seletor.value = opcao.value;
+                atualizarMaximo();
                 mostrarMensagem('Produto encontrado: ' + opcao.dataset.nome + '. Agora informe a quantidade.', 'success');
                 campoQuantidade.focus();
                 campoQuantidade.select();
@@ -50,6 +51,17 @@
         }
     });
 
+    function atualizarMaximo() {
+        const opcao = seletor.options[seletor.selectedIndex];
+        const disponivel = opcao ? opcao.dataset.disponivel : '';
+        if (disponivel) {
+            campoQuantidade.max = disponivel;
+        } else {
+            campoQuantidade.removeAttribute('max');
+        }
+    }
+
+    seletor.addEventListener('change', atualizarMaximo);
     btnLer.addEventListener('click', () => {
         mensagemCamera.hidden = true;
         mensagemLeitura.hidden = true;

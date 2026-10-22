@@ -48,7 +48,7 @@ class SegurancaWebTest extends TesteWebBase {
 
     @Test
     void baixaDeLote_semLogin_deveRedirecionarParaOLogin() throws Exception {
-        mockMvc.perform(post("/lotes/p1/l1/consumir").with(csrf()))
+        mockMvc.perform(post("/lotes/p1/l1/descartar").with(csrf()))
                 .andExpect(redirectedUrl("/login"));
     }
 
@@ -61,7 +61,7 @@ class SegurancaWebTest extends TesteWebBase {
 
     @Test
     void requisicaoPostSemTokenCsrf_deveSerRecusada() throws Exception {
-        mockMvc.perform(post("/lotes/p1/l1/consumir").with(user(ANA)))
+        mockMvc.perform(post("/lotes/p1/l1/descartar").with(user(ANA)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/usuarios/novo").param("nome", "Ana"))
                 .andExpect(status().isForbidden());

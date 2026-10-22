@@ -16,16 +16,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @Controller
 public class DespensaController {
 
     static final String MENSAGEM_ALTERACAO_CONCORRENTE = "Este item foi alterado em outra tela, atualize a página";
-
-    private static final Map<String, String> DESTINOS_APOS_BAIXA = Map.of(
-            "despensa", "redirect:/",
-            "alertas", "redirect:/alertas");
 
     private final LoteService loteService;
     private final Clock relogio;
@@ -59,14 +54,6 @@ public class DespensaController {
         return "alertas";
     }
 
-    @PostMapping("/lotes/{produtoId}/{loteId}/consumir")
-    public String consumir(@AuthenticationPrincipal UsuarioLogado usuario, @PathVariable String produtoId,
-                           @PathVariable String loteId, @RequestParam(defaultValue = "despensa") String origem,
-                           RedirectAttributes redirecionamento) {
-        return darBaixa(redirecionamento, origem, "Item marcado como consumido.",
-                () -> loteService.consumir(usuario.getId(), produtoId, loteId));
-    }
-
     @PostMapping("/lotes/{produtoId}/{loteId}/descartar")
     public String descartar(@AuthenticationPrincipal UsuarioLogado usuario, @PathVariable String produtoId,
                             @PathVariable String loteId, @RequestParam(defaultValue = "despensa") String origem,
@@ -85,6 +72,6 @@ public class DespensaController {
         } catch (OptimisticLockingFailureException e) {
             redirecionamento.addFlashAttribute("erro", MENSAGEM_ALTERACAO_CONCORRENTE);
         }
-        return DESTINOS_APOS_BAIXA.getOrDefault(origem, "redirect:/");
+        return Destinos.redirecionar(origem);
     }
 }

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -108,15 +110,46 @@ class DespensaWebTest extends TesteWebBase {
     }
 
     @Test
-    void botaoConsumido_deveDarBaixaNoLoteEVoltarParaADespensa() throws Exception {
-        Produto produto = produtoService.cadastrar(ANA.getId(), "111", "Feijão", null);
-        Lote lote = loteService.cadastrar(ANA.getId(), produto.getId(), 1, 8.0, HOJE.plusDays(10));
+    void botaoConsumir_deveAbrirATelaDeConsumoComOProdutoEAQuantidade1() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "111", "Água Mineral", null);
+        lote(ANA, agua, 4, 2.0, HOJE.plusDays(10));
 
-        mockMvc.perform(post("/lotes/{p}/{l}/consumir", produto.getId(), lote.getId()).with(user(ANA)).with(csrf()))
+        mockMvc.perform(get("/").with(user(ANA)))
+                .andExpect(content().string(containsString(
+                        "href=\"/consumir?produtoId=" + agua.getId() + "&amp;quantidade=1&amp;origem=despensa\"")))
+                .andExpect(content().string(not(containsString(">Consumido<"))));
+    }
+
+    @Test
+    void consumirUmaUnidadeAPartirDaDespensa_deveManterORestanteAtivo() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "111", "Água Mineral", null);
+        Lote lote = lote(ANA, agua, 4, 2.0, HOJE.plusDays(10));
+
+        mockMvc.perform(get("/consumir").with(user(ANA)).param("produtoId", agua.getId()).param("quantidade", "1")
+                        .param("origem", "despensa"))
+                .andExpect(content().string(containsString("Consumir 1 de 4 unidades de Água Mineral?")));
+        mockMvc.perform(post("/consumir").with(user(ANA)).with(csrf()).param("produtoId", agua.getId())
+                        .param("quantidade", "1").param("origem", "despensa"))
                 .andExpect(redirectedUrl("/"))
-                .andExpect(flash().attribute("sucesso", "Item marcado como consumido."));
+                .andExpect(flash().attribute("sucesso", "Consumo registrado: 1 unidade de \"Água Mineral\"."));
 
-        assertEquals(StatusLote.CONSUMIDO, statusDoLote(ANA.getId(), produto, lote));
+        Lote restante = recarregar(ANA, agua, lote);
+        assertEquals(StatusLote.ATIVO, restante.getStatus());
+        assertEquals(3, restante.getQuantidade());
+        List<Lote> lotes = produtoService.buscarPorId(ANA.getId(), agua.getId()).getLotes();
+        assertEquals(2, lotes.size());
+        assertTrue(lotes.stream().anyMatch(l -> l.getStatus() == StatusLote.CONSUMIDO && l.getQuantidade() == 1));
+    }
+
+    @Test
+    void loteVencido_naoDeveOferecerConsumirSoDescartarEEditar() throws Exception {
+        Produto iogurte = produtoService.cadastrar(ANA.getId(), "111", "Iogurte", null);
+        loteVencido(ANA, iogurte, 2, 3.0, 1);
+
+        mockMvc.perform(get("/").with(user(ANA)))
+                .andExpect(content().string(not(containsString("/consumir?produtoId="))))
+                .andExpect(content().string(containsString(">Descartado<")))
+                .andExpect(content().string(containsString(">Editar<")));
     }
 
     @Test
@@ -138,7 +171,6 @@ class DespensaWebTest extends TesteWebBase {
         loteService.cadastrar(ANA.getId(), produto.getId(), 1, 8.0, HOJE.plusDays(10));
 
         mockMvc.perform(get("/").with(user(ANA)))
-                .andExpect(content().string(containsString("data-confirmacao=\"Marcar &quot;Feijão&quot; como consumido?\"")))
                 .andExpect(content().string(containsString("como descartado (vencido)?")));
     }
 
@@ -160,7 +192,7 @@ class DespensaWebTest extends TesteWebBase {
         Lote lote = loteService.cadastrar(ANA.getId(), produto.getId(), 1, 8.0, HOJE.plusDays(10));
         repositorio().simularAlteracaoConcorrenteNaProximaGravacao();
 
-        mockMvc.perform(post("/lotes/{p}/{l}/consumir", produto.getId(), lote.getId()).with(user(ANA)).with(csrf()))
+        mockMvc.perform(post("/lotes/{p}/{l}/descartar", produto.getId(), lote.getId()).with(user(ANA)).with(csrf()))
                 .andExpect(redirectedUrl("/"))
                 .andExpect(flash().attribute("erro", "Este item foi alterado em outra tela, atualize a página"));
 

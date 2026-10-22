@@ -80,6 +80,28 @@ class ConsumoWebTest extends TesteWebBase {
     }
 
     @Test
+    void previa_devePerguntarExatamenteOQueVaiAcontecerELimitarAQuantidadeAoDisponivel() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "111", "Água Mineral", null);
+        lote(ANA, agua, 4, 2.0, HOJE.plusDays(10));
+        loteVencido(ANA, agua, 5, 2.0, 1);
+
+        mockMvc.perform(get("/consumir").with(user(ANA)).param("produtoId", agua.getId()).param("quantidade", "1"))
+                .andExpect(content().string(containsString("Consumir 1 de 4 unidades de Água Mineral?")))
+                .andExpect(content().string(containsString("max=\"4\"")))
+                .andExpect(content().string(containsString("data-disponivel=\"4\"")));
+    }
+
+    @Test
+    void origemInvalida_deveVoltarParaADespensa() throws Exception {
+        Produto leite = produtoService.cadastrar(ANA.getId(), "111", "Leite", null);
+        lote(ANA, leite, 3, 4.0, HOJE.plusDays(5));
+
+        mockMvc.perform(post("/consumir").with(user(ANA)).with(csrf()).param("produtoId", leite.getId())
+                        .param("quantidade", "1").param("origem", "https://site-malicioso.example"))
+                .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
     void confirmar_deveConsumirPeloFefoEVoltarParaADespensa() throws Exception {
         Produto leite = produtoService.cadastrar(ANA.getId(), "111", "Leite", null);
         Lote distante = lote(ANA, leite, 4, 4.0, HOJE.plusDays(20));

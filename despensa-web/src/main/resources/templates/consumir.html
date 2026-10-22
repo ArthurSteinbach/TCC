@@ -24,6 +24,7 @@
                 <div class="alert" id="mensagemLeitura" role="status" hidden></div>
 
                 <form th:action="@{/consumir}" method="get" id="formPrevia">
+                    <input type="hidden" name="origem" th:value="${origem}" th:unless="${#strings.isEmpty(origem)}">
                     <div class="mb-3">
                         <label for="produtoId" class="form-label">Ou escolha na lista</label>
                         <select class="form-select form-select-lg" id="produtoId" name="produtoId" required>
@@ -31,13 +32,15 @@
                             <option th:each="opcao : ${opcoes}" th:value="${opcao.produtoId()}"
                                     th:text="${opcao.rotulo()}" th:data-codigo="${opcao.codigoBarras()}"
                                     th:data-nome="${opcao.nome()}"
+                                    th:data-disponivel="${opcao.disponivelParaCampo()}"
                                     th:selected="${opcao.produtoId() == produtoSelecionado}">Produto</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="quantidade" class="form-label">Quantidade</label>
                         <input type="number" class="form-control form-control-lg" id="quantidade" name="quantidade"
-                               th:value="${quantidade}" min="1" step="1" inputmode="numeric" required>
+                               th:value="${quantidade}" th:max="${maximo}" min="1" step="1" inputmode="numeric"
+                               required>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg w-100">Ver prévia</button>
                 </form>
@@ -47,13 +50,9 @@
         <section class="card mb-3" id="secaoPrevia" th:if="${previa != null}">
             <div class="card-body">
                 <h2 class="h6 mb-1">2. Confira antes de confirmar</h2>
+                <p class="h5 my-2" id="perguntaConfirmacao" th:text="${perguntaConfirmacao}">Consumir 1 de 4 unidades?</p>
                 <p class="text-secondary small mb-3">
                     Os itens que vencem primeiro saem primeiro (regra FEFO).
-                </p>
-                <p class="mb-2">
-                    <strong th:text="${quantidadePrevia}">1</strong>
-                    <span th:text="${quantidadePrevia == 1} ? 'unidade de' : 'unidades de'">unidades de</span>
-                    <strong th:text="${nomeProdutoPrevia}">Produto</strong>
                 </p>
 
                 <ul class="list-group mb-3">
@@ -75,9 +74,10 @@
                 <form th:action="@{/consumir}" method="post">
                     <input type="hidden" name="produtoId" th:value="${produtoSelecionado}">
                     <input type="hidden" name="quantidade" th:value="${quantidadePrevia}">
+                    <input type="hidden" name="origem" th:value="${origem}" th:unless="${#strings.isEmpty(origem)}">
                     <button type="submit" class="btn btn-success btn-lg w-100 mb-2">Confirmar consumo</button>
                 </form>
-                <a class="btn btn-outline-secondary w-100" th:href="@{/consumir}">Cancelar</a>
+                <a class="btn btn-outline-secondary w-100" th:href="@{${voltarPara}}">Cancelar</a>
             </div>
         </section>
 

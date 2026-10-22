@@ -38,26 +38,31 @@ public class ConsumoController {
     @GetMapping
     public String pagina(@AuthenticationPrincipal UsuarioLogado usuario,
                          @RequestParam(required = false) String produtoId,
-                         @RequestParam(defaultValue = "1") String quantidade, Model model) {
+                         @RequestParam(defaultValue = "1") String quantidade,
+                         @RequestParam(required = false) String origem, Model model) {
         if (produtoId != null) {
             try {
                 int unidades = LeituraDeCampos.quantidadeInteira(quantidade);
                 Produto produto = produtoService.buscarPorId(usuario.getId(), produtoEscolhido(produtoId));
                 List<ItemConsumo> plano = loteService.planejarConsumoFEFO(usuario.getId(), produto.getId(), unidades);
-                model.addAttribute("nomeProdutoPrevia", produto.getNome());
+                double disponivel = OpcaoConsumo.de(produto, LocalDate.now(relogio)).disponivel();
+                model.addAttribute("perguntaConfirmacao", "Consumir " + unidades + " de "
+                        + Formatos.quantidade(disponivel) + (disponivel == 1 ? " unidade" : " unidades")
+                        + " de " + produto.getNome() + "?");
                 model.addAttribute("previa", plano.stream().map(LinhaPrevia::de).toList());
                 model.addAttribute("quantidadePrevia", unidades);
             } catch (ValidacaoException e) {
                 model.addAttribute("erro", e.getMessage());
             }
         }
-        return montarPagina(usuario, produtoId, quantidade, model);
+        return montarPagina(usuario, produtoId, quantidade, origem, model);
     }
 
     @PostMapping
     public String confirmar(@AuthenticationPrincipal UsuarioLogado usuario,
                             @RequestParam(defaultValue = "") String produtoId,
                             @RequestParam(defaultValue = "") String quantidade,
+                            @RequestParam(required = false) String origem,
                             Model model, RedirectAttributes redirecionamento) {
         try {
             int unidades = LeituraDeCampos.quantidadeInteira(quantidade);
@@ -65,23 +70,33 @@ public class ConsumoController {
             loteService.consumirPorFEFO(usuario.getId(), produto.getId(), unidades);
             redirecionamento.addFlashAttribute("sucesso", "Consumo registrado: " + unidades
                     + (unidades == 1 ? " unidade" : " unidades") + " de \"" + produto.getNome() + "\".");
-            return "redirect:/";
+            return Destinos.redirecionar(origem);
         } catch (ValidacaoException e) {
             model.addAttribute("erro", e.getMessage());
         } catch (OptimisticLockingFailureException e) {
             model.addAttribute("erro", DespensaController.MENSAGEM_ALTERACAO_CONCORRENTE);
         }
-        return montarPagina(usuario, produtoId, quantidade, model);
+        return montarPagina(usuario, produtoId, quantidade, origem, model);
     }
 
-    private String montarPagina(UsuarioLogado usuario, String produtoId, String quantidade, Model model) {
+    private String montarPagina(UsuarioLogado usuario, String produtoId, String quantidade, String origem,
+                                Model model) {
         LocalDate hoje = LocalDate.now(relogio);
-        model.addAttribute("menu", "consumir");
-        model.addAttribute("opcoes", produtoService.listarComLotesAtivos(usuario.getId()).stream()
+        List<OpcaoConsumo> opcoes = produtoService.listarComLotesAtivos(usuario.getId()).stream()
                 .map(p -> OpcaoConsumo.de(p, hoje))
-                .toList());
-        model.addAttribute("produtoSelecionado", produtoId == null ? "" : produtoId);
+                .toList();
+        String selecionado = produtoId == null ? "" : produtoId;
+
+        model.addAttribute("menu", "consumir");
+        model.addAttribute("opcoes", opcoes);
+        model.addAttribute("produtoSelecionado", selecionado);
+        model.addAttribute("maximo", opcoes.stream()
+                .filter(o -> o.produtoId().equals(selecionado) && o.disponivel() > 0)
+                .map(o -> Formatos.quantidade(o.disponivel()))
+                .findFirst().orElse(null));
         model.addAttribute("quantidade", quantidade);
+        model.addAttribute("origem", origem == null ? "" : Destinos.origemValida(origem));
+        model.addAttribute("voltarPara", origem == null ? "/consumir" : Destinos.caminho(origem));
         return "consumir";
     }
 
@@ -101,6 +116,10 @@ public class ConsumoController {
                     .mapToDouble(Lote::getQuantidade)
                     .sum();
             return new OpcaoConsumo(produto.getId(), produto.getNome(), produto.getCodigoBarras(), disponivel);
+        }
+
+        public String disponivelParaCampo() {
+            return disponivel > 0 ? Formatos.numeroParaCampo(disponivel) : "";
         }
 
         public String rotulo() {
