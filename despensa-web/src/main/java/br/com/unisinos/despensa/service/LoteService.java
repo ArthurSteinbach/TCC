@@ -19,6 +19,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 @Service
@@ -126,6 +128,35 @@ public class LoteService {
         Lote descartado = baixar(produto, lote, quantidade, StatusLote.DESCARTADO, agora());
         produtoRepository.save(produto);
         return descartado;
+    }
+
+    public Lote desfazerBaixa(String usuarioId, String produtoId, String loteId) {
+        Produto produto = produtoService.buscarPorId(usuarioId, produtoId);
+        Lote baixado = produto.buscarLote(loteId)
+                .orElseThrow(() -> new ValidacaoException("Item não encontrado no histórico."));
+        if (baixado.isAtivo()) {
+            throw new ValidacaoException("Este item já está na despensa.");
+        }
+
+        Optional<Lote> loteDeOrigem = produto.getLotes().stream()
+                .filter(l -> l != baixado && l.isAtivo())
+                .filter(l -> l.getDataValidade().equals(baixado.getDataValidade()))
+                .filter(l -> Double.compare(l.getPrecoUnitario(), baixado.getPrecoUnitario()) == 0)
+                .filter(l -> Objects.equals(l.getDataCadastro(), baixado.getDataCadastro()))
+                .findFirst();
+
+        Lote devolvido;
+        if (loteDeOrigem.isPresent()) {
+            devolvido = loteDeOrigem.get();
+            devolvido.setQuantidade(devolvido.getQuantidade() + baixado.getQuantidade());
+            produto.getLotes().remove(baixado);
+        } else {
+            devolvido = baixado;
+            devolvido.setStatus(StatusLote.ATIVO);
+            devolvido.setDataBaixa(null);
+        }
+        produtoRepository.save(produto);
+        return devolvido;
     }
 
     public List<LoteDoProduto> listarAtivosFEFO(String usuarioId) {

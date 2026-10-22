@@ -9,10 +9,15 @@ import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class HistoricoWebTest extends TesteWebBase {
@@ -74,6 +79,72 @@ class HistoricoWebTest extends TesteWebBase {
         mockMvc.perform(get("/").with(user(ANA)))
                 .andExpect(content().string(containsString("href=\"/historico\"")))
                 .andExpect(content().string(containsString(">Histórico<")));
+    }
+
+    @Test
+    void cadaItem_deveTerOBotaoDesfazerComConfirmacaoClara() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "111", "Água Mineral", null);
+        Lote lote = lote(ANA, agua, 4, 2.0, HOJE.plusDays(3));
+        loteService.descartar(ANA.getId(), agua.getId(), lote.getId(), 1);
+        loteService.consumirPorFEFO(ANA.getId(), agua.getId(), 2);
+
+        mockMvc.perform(get("/historico").with(user(ANA)))
+                .andExpect(content().string(containsString(
+                        "Desfazer: devolver 1 unidade de Água Mineral para a despensa? O valor sai do total de perdas.")))
+                .andExpect(content().string(containsString(
+                        "data-confirmacao=\"Desfazer: devolver 2 unidades de Água Mineral para a despensa?\"")));
+    }
+
+    @Test
+    void desfazerConsumo_deveDevolverParaADespensaETirarDoHistorico() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "111", "Água Mineral", null);
+        Lote lote = lote(ANA, agua, 4, 2.0, HOJE.plusDays(3));
+        loteService.consumirPorFEFO(ANA.getId(), agua.getId(), 1);
+        Lote consumido = produtoService.buscarPorId(ANA.getId(), agua.getId()).getLotes().stream()
+                .filter(l -> l.getStatus() == StatusLote.CONSUMIDO).findFirst().orElseThrow();
+
+        mockMvc.perform(post("/historico/{p}/{l}/desfazer", agua.getId(), consumido.getId())
+                        .with(user(ANA)).with(csrf()).param("situacao", "consumidos"))
+                .andExpect(redirectedUrl("/historico?situacao=consumidos"))
+                .andExpect(flash().attribute("sucesso",
+                        "Desfeito: 1 unidade de \"Água Mineral\" voltou para a despensa."));
+
+        assertEquals(4, recarregar(ANA, agua, lote).getQuantidade());
+        assertTrue(loteService.listarHistorico(ANA.getId(), null).isEmpty());
+    }
+
+    @Test
+    void desfazerDescarte_deveVoltarOTotalDePerdasAoValorAnterior() throws Exception {
+        Produto agua = produtoService.cadastrar(ANA.getId(), "111", "Água Mineral", null);
+        Lote outro = lote(ANA, agua, 1, 10.0, HOJE.plusDays(1));
+        loteService.descartar(ANA.getId(), agua.getId(), outro.getId());
+        double perdaAntes = loteService.calcularPerdaFinanceiraTotal(ANA.getId());
+        Lote lote = lote(ANA, agua, 4, 2.0, HOJE.plusDays(3));
+        Lote descartado = loteService.descartar(ANA.getId(), agua.getId(), lote.getId(), 3);
+        assertEquals(perdaAntes + 6.0, loteService.calcularPerdaFinanceiraTotal(ANA.getId()), 0.001);
+
+        mockMvc.perform(post("/historico/{p}/{l}/desfazer", agua.getId(), descartado.getId())
+                        .with(user(ANA)).with(csrf()))
+                .andExpect(redirectedUrl("/historico"));
+
+        assertEquals(perdaAntes, loteService.calcularPerdaFinanceiraTotal(ANA.getId()), 0.001);
+        assertEquals(4, recarregar(ANA, agua, lote).getQuantidade());
+        mockMvc.perform(get("/relatorio").with(user(ANA)))
+                .andExpect(content().string(containsString("R$ 10,00")));
+    }
+
+    @Test
+    void desfazerItemDeOutroUsuario_deveSerRecusado() throws Exception {
+        Produto doBruno = produtoService.cadastrar(BRUNO.getId(), "1", "Café do Bruno", null);
+        Lote lote = lote(BRUNO, doBruno, 2, 15.0, HOJE.plusDays(3));
+        loteService.descartar(BRUNO.getId(), doBruno.getId(), lote.getId());
+
+        mockMvc.perform(post("/historico/{p}/{l}/desfazer", doBruno.getId(), lote.getId())
+                        .with(user(ANA)).with(csrf()))
+                .andExpect(redirectedUrl("/historico"))
+                .andExpect(flash().attribute("erro", "Produto não encontrado."));
+
+        assertEquals(StatusLote.DESCARTADO, recarregar(BRUNO, doBruno, lote).getStatus());
     }
 
     private void salvarProdutoComBaixas() {

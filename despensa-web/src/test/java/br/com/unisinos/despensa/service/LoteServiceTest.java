@@ -226,6 +226,76 @@ class LoteServiceTest {
     }
 
     @Test
+    void desfazerConsumoParcial_deveDevolverAQuantidadeAoLoteDeOrigem() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 4, 2.0, HOJE.plusDays(10));
+        loteService.consumirPorFEFO(USUARIO, produtoDeTeste.getId(), 1);
+        Lote consumido = ambiente.lotes(USUARIO, produtoDeTeste).stream()
+                .filter(l -> l.getStatus() == StatusLote.CONSUMIDO).findFirst().orElseThrow();
+
+        Lote devolvido = loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), consumido.getId());
+
+        List<Lote> lotes = ambiente.lotes(USUARIO, produtoDeTeste);
+        assertEquals(1, lotes.size());
+        assertEquals(lote.getId(), devolvido.getId());
+        assertEquals(StatusLote.ATIVO, lotes.get(0).getStatus());
+        assertEquals(4, lotes.get(0).getQuantidade());
+        assertTrue(loteService.listarHistorico(USUARIO, null).isEmpty());
+    }
+
+    @Test
+    void desfazerDescarteDoLoteInteiro_deveVoltarComoAtivoETirarDasPerdas() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 3, 5.0, HOJE.plusDays(2));
+        double perdaAntes = loteService.calcularPerdaFinanceiraTotal(USUARIO);
+        loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId());
+        assertEquals(perdaAntes + 15.0, loteService.calcularPerdaFinanceiraTotal(USUARIO), 0.001);
+
+        loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), lote.getId());
+
+        Lote devolvido = ambiente.lote(USUARIO, produtoDeTeste, lote.getId());
+        assertEquals(StatusLote.ATIVO, devolvido.getStatus());
+        assertEquals(3, devolvido.getQuantidade());
+        assertEquals(HOJE.plusDays(2), devolvido.getDataValidade());
+        assertEquals(5.0, devolvido.getPrecoUnitario());
+        assertNull(devolvido.getDataBaixa());
+        assertEquals(perdaAntes, loteService.calcularPerdaFinanceiraTotal(USUARIO), 0.001);
+    }
+
+    @Test
+    void desfazerDescarteParcial_deveJuntarAoLoteEVoltarOTotalDePerdas() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 4, 2.5, HOJE.plusDays(3));
+        Lote descartado = loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId(), 1);
+
+        loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), descartado.getId());
+
+        List<Lote> lotes = ambiente.lotes(USUARIO, produtoDeTeste);
+        assertEquals(1, lotes.size());
+        assertEquals(4, lotes.get(0).getQuantidade());
+        assertEquals(0.0, loteService.calcularPerdaFinanceiraTotal(USUARIO), 0.001);
+    }
+
+    @Test
+    void desfazerQuandoOLoteDeOrigemJaFoiBaixado_deveVoltarComoUmLoteSeparado() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 4, 2.0, HOJE.plusDays(10));
+        Lote descartado = loteService.descartar(USUARIO, produtoDeTeste.getId(), lote.getId(), 1);
+        loteService.consumir(USUARIO, produtoDeTeste.getId(), lote.getId());
+
+        loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), descartado.getId());
+
+        assertEquals(StatusLote.ATIVO, ambiente.lote(USUARIO, produtoDeTeste, descartado.getId()).getStatus());
+        assertEquals(StatusLote.CONSUMIDO, ambiente.lote(USUARIO, produtoDeTeste, lote.getId()).getStatus());
+    }
+
+    @Test
+    void desfazerItemQueJaEstaNaDespensaOuQueNaoExiste_deveSerRecusado() {
+        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 2.0, HOJE.plusDays(10));
+
+        assertThrows(ValidacaoException.class,
+                () -> loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), lote.getId()));
+        assertThrows(ValidacaoException.class,
+                () -> loteService.desfazerBaixa(USUARIO, produtoDeTeste.getId(), "nao-existe"));
+    }
+
+    @Test
     void listarDescartados_deveTrazerSoOsLotesDescartados() {
         Lote descartado = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 2, 4.0, HOJE.plusDays(1));
         Lote consumido = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 4.0, HOJE.plusDays(2));

@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+<form method="post" th:fragment="desfazer(item, filtro)"
+      th:action="@{/historico/{p}/{l}/desfazer(p=${item.produtoId()},l=${item.loteId()})}"
+      th:data-confirmacao="${item.confirmacaoDesfazer()}">
+    <input type="hidden" name="situacao" th:value="${filtro}">
+    <button type="submit" class="btn btn-outline-secondary btn-sm px-3">Desfazer</button>
+</form>
+</body>
+</html>

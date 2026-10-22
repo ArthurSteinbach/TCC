@@ -34,6 +34,7 @@
                     <th class="text-end">Valor (R$)</th>
                     <th>Situação</th>
                     <th>Data da baixa</th>
+                    <th class="text-end">Ações</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -46,6 +47,9 @@
                               th:text="${item.situacao()}">Consumido</span></td>
                     <td th:text="${item.dataBaixa() != null} ? ${#temporals.format(item.dataBaixa(), 'dd/MM/yyyy HH:mm')} : '-'">
                         01/01/2026 10:00
+                    </td>
+                    <td class="text-end">
+                        <form th:replace="~{fragments/desfazer-baixa :: desfazer(${item}, ${filtro})}"></form>
                     </td>
                 </tr>
                 </tbody>
@@ -65,6 +69,9 @@
                         <span th:text="|${item.quantidadeFormatada()} un.|">1 un.</span> ·
                         <span th:text="|R$ ${#numbers.formatDecimal(item.valorTotal(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</span> ·
                         <span th:text="${item.dataBaixa() != null} ? ${#temporals.format(item.dataBaixa(), 'dd/MM/yyyy HH:mm')} : '-'">01/01/2026</span>
+                    </div>
+                    <div class="mt-2">
+                        <form th:replace="~{fragments/desfazer-baixa :: desfazer(${item}, ${filtro})}"></form>
                     </div>
                 </div>
             </div>

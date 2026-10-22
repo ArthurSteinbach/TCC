@@ -58,6 +58,8 @@ class IsolamentoEntreUsuariosTest {
         assertThrows(ValidacaoException.class, () -> loteService.descartar(USUARIO, id, loteDoOutro.getId()));
         assertThrows(ValidacaoException.class, () -> loteService.planejarConsumoFEFO(USUARIO, id, 1));
         assertThrows(ValidacaoException.class, () -> loteService.consumirPorFEFO(USUARIO, id, 1));
+        assertThrows(ValidacaoException.class, () -> loteService.descartar(USUARIO, id, loteDoOutro.getId(), 1));
+        assertThrows(ValidacaoException.class, () -> loteService.desfazerBaixa(USUARIO, id, loteDoOutro.getId()));
 
         Produto intacto = ambiente.recarregar(OUTRO_USUARIO, produtoDoOutro);
         assertEquals("Leite do Outro", intacto.getNome());
