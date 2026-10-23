@@ -5,14 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -31,7 +27,8 @@ class SegurancaWebTest extends TesteWebBase {
     private PasswordEncoder codificador;
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos"})
+    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos",
+            "/notificacoes"})
     void paginaProtegida_semLogin_deveRedirecionarParaOLogin(String pagina) throws Exception {
         mockMvc.perform(get(pagina))
                 .andExpect(status().is3xxRedirection())
@@ -98,8 +95,7 @@ class SegurancaWebTest extends TesteWebBase {
 
     @Test
     void loginComBancoForaDoAr_deveMostrarMensagemDeIndisponibilidade() throws Exception {
-        when(usuarioRepository.findByEmail(anyString()))
-                .thenThrow(new DataAccessResourceFailureException("Timed out while waiting for a server"));
+        usuarios().simularBancoForaDoAr(true);
 
         mockMvc.perform(formLogin("/login").userParameter("email").passwordParam("senha")
                         .user("ana@exemplo.com").password(SENHA))
@@ -121,8 +117,8 @@ class SegurancaWebTest extends TesteWebBase {
     }
 
     private void cadastrarAnaNoRepositorio() {
-        Usuario ana = new Usuario("Ana", "ana@exemplo.com", codificador.encode(SENHA));
-        ana.setId(ANA.getId());
-        when(usuarioRepository.findByEmail("ana@exemplo.com")).thenReturn(Optional.of(ana));
+        Usuario ana = usuarios().findById(ANA.getId()).orElseThrow();
+        ana.setSenhaHash(codificador.encode(SENHA));
+        usuarios().save(ana);
     }
 }

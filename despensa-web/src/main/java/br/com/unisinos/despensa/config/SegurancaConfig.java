@@ -22,17 +22,21 @@ import java.util.List;
 public class SegurancaConfig {
 
     private static final List<String> PAGINAS_DO_MENU =
-            List.of("/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos");
+            List.of("/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos",
+                    "/notificacoes");
 
     @Bean
     public SecurityFilterChain filtroDeSeguranca(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(requisicoes -> requisicoes
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/tarefas/enviar-alertas").permitAll()
+                        .requestMatchers("/notificacoes/confirmar", "/notificacoes/descadastrar").permitAll()
                         .requestMatchers("/login", "/usuarios/novo", "/saude", "/css/**", "/js/**",
                                 "/favicon.ico", "/favicon.svg", "/apple-touch-icon.png",
                                 "/apple-touch-icon-precomposed.png").permitAll()
                         .anyRequest().authenticated())
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/tarefas/enviar-alertas"))
                 .requestCache(cache -> cache.requestCache(lembrarSoPaginasDoMenu()))
                 .formLogin(login -> login
                         .loginPage("/login")

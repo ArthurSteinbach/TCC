@@ -36,7 +36,7 @@ public class UsuarioService {
             throw new ValidacaoException("O e-mail é obrigatório.");
         }
         String emailNormalizado = normalizarEmail(email);
-        if (!FORMATO_EMAIL.matcher(emailNormalizado).matches()) {
+        if (!emailValido(emailNormalizado)) {
             throw new ValidacaoException("Informe um e-mail válido.");
         }
         if (senha == null || senha.length() < TAMANHO_MINIMO_SENHA) {
@@ -58,6 +58,10 @@ public class UsuarioService {
         } catch (DuplicateKeyException e) {
             throw new ValidacaoException(EMAIL_REPETIDO);
         }
+    }
+
+    public static boolean emailValido(String emailNormalizado) {
+        return emailNormalizado != null && FORMATO_EMAIL.matcher(emailNormalizado).matches();
     }
 
     public static String normalizarEmail(String email) {

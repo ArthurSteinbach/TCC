@@ -100,6 +100,9 @@ public class LoteService {
 
         Produto produto = produtoService.buscarPorId(usuarioId, produtoId);
         Lote lote = buscarLoteAtivo(produto, loteId);
+        if (!dataValidade.equals(lote.getDataValidade())) {
+            lote.zerarAvisos();
+        }
         lote.setQuantidade(quantidade);
         lote.setPrecoUnitario(precoUnitario);
         lote.setDataValidade(dataValidade);
@@ -280,6 +283,8 @@ public class LoteService {
                 lote.getDataCadastro());
         baixado.setStatus(novoStatus);
         baixado.setDataBaixa(agora);
+        baixado.setAvisoVencendoEm(lote.getAvisoVencendoEm());
+        baixado.setAvisoVencidoEm(lote.getAvisoVencidoEm());
         produto.getLotes().add(baixado);
         return baixado;
     }

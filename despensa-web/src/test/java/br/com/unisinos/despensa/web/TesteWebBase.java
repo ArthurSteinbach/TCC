@@ -1,11 +1,14 @@
 package br.com.unisinos.despensa.web;
 
+import br.com.unisinos.despensa.email.EnviadorDeEmail;
+import br.com.unisinos.despensa.email.EnviadorDeEmailFalso;
 import br.com.unisinos.despensa.integracao.ConsultaProdutoExterna;
 import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.Produto;
 import br.com.unisinos.despensa.repository.ProdutoRepository;
 import br.com.unisinos.despensa.repository.ProdutoRepositoryEmMemoria;
 import br.com.unisinos.despensa.repository.UsuarioRepository;
+import br.com.unisinos.despensa.repository.UsuarioRepositoryEmMemoria;
 import br.com.unisinos.despensa.seguranca.UsuarioLogado;
 import br.com.unisinos.despensa.service.LoteService;
 import br.com.unisinos.despensa.service.ProdutoService;
@@ -25,7 +28,9 @@ import java.time.LocalDate;
 
 @SpringBootTest(properties = {
         "spring.mongodb.uri=mongodb://localhost:27017",
-        "despensa.indices.criar-ao-iniciar=false"
+        "despensa.indices.criar-ao-iniciar=false",
+        "despensa.alertas.token=token-de-teste-com-tamanho-razoavel",
+        "despensa.url-publica=https://despensa.teste"
 })
 @AutoConfigureMockMvc
 abstract class TesteWebBase {
@@ -50,14 +55,25 @@ abstract class TesteWebBase {
     @TestBean
     protected Clock relogio;
 
-    @MockitoBean
+    @TestBean
     protected UsuarioRepository usuarioRepository;
+
+    @TestBean
+    protected EnviadorDeEmail enviadorDeEmail;
 
     @MockitoBean
     protected ConsultaProdutoExterna consultaProdutoExterna;
 
     static ProdutoRepository produtoRepository() {
         return new ProdutoRepositoryEmMemoria();
+    }
+
+    static UsuarioRepository usuarioRepository() {
+        return new UsuarioRepositoryEmMemoria();
+    }
+
+    static EnviadorDeEmail enviadorDeEmail() {
+        return new EnviadorDeEmailFalso();
     }
 
     static Clock relogio() {
@@ -67,7 +83,19 @@ abstract class TesteWebBase {
     @BeforeEach
     void limparDados() {
         repositorio().limpar();
-        Mockito.reset(usuarioRepository, consultaProdutoExterna);
+        usuarios().limpar();
+        emails().limpar();
+        usuarios().cadastrar(ANA.getId(), ANA.getNome(), ANA.getEmail());
+        usuarios().cadastrar(BRUNO.getId(), BRUNO.getNome(), BRUNO.getEmail());
+        Mockito.reset(consultaProdutoExterna);
+    }
+
+    protected UsuarioRepositoryEmMemoria usuarios() {
+        return (UsuarioRepositoryEmMemoria) usuarioRepository;
+    }
+
+    protected EnviadorDeEmailFalso emails() {
+        return (EnviadorDeEmailFalso) enviadorDeEmail;
     }
 
     protected ProdutoRepositoryEmMemoria repositorio() {

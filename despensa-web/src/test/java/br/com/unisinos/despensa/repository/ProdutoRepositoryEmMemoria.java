@@ -131,6 +131,8 @@ public class ProdutoRepositoryEmMemoria implements ProdutoRepository {
                     lote.getDataCadastro());
             l.setStatus(lote.getStatus());
             l.setDataBaixa(lote.getDataBaixa());
+            l.setAvisoVencendoEm(lote.getAvisoVencendoEm());
+            l.setAvisoVencidoEm(lote.getAvisoVencidoEm());
             lotes.add(l);
         }
         copia.setLotes(lotes);

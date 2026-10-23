@@ -86,13 +86,14 @@ class DespensaWebTest extends TesteWebBase {
                 .andReturn().getResponse().getContentAsString();
 
         for (String item : new String[]{">Despensa<", ">Cadastrar<", ">Consumir<", ">Alertas<", ">Relatório<",
-                ">Histórico<", ">Produtos<", ">Sair<"}) {
+                ">Histórico<", ">Produtos<", ">Notificações<", ">Sair<"}) {
             assertTrue(html.contains(item), "Menu sem o item " + item);
         }
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos"})
+    @ValueSource(strings = {"/", "/cadastrar", "/consumir", "/alertas", "/relatorio", "/historico", "/produtos",
+            "/notificacoes"})
     void todosOsItensDoMenu_devemAbrirUmaPaginaDeVerdade(String pagina) throws Exception {
         mockMvc.perform(get(pagina).with(user(ANA)))
                 .andExpect(status().isOk())
@@ -206,6 +207,8 @@ class DespensaWebTest extends TesteWebBase {
 
         mockMvc.perform(get("/").with(user(ANA)))
                 .andExpect(status().isServiceUnavailable())
+                .andExpect(content().string(containsString("<h1 class=\"h4\">Banco de dados indisponível</h1>")))
+                .andExpect(content().string(containsString("<title>Banco de dados indisponível — Despensa</title>")))
                 .andExpect(content().string(containsString("Não foi possível acessar o banco de dados agora.")))
                 .andExpect(content().string(not(containsString("Exception"))));
     }

@@ -1,22 +1,16 @@
 package br.com.unisinos.despensa.web;
 
 import br.com.unisinos.despensa.model.Usuario;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -30,53 +24,45 @@ class CadastroUsuarioWebTest extends TesteWebBase {
     @Autowired
     private PasswordEncoder codificador;
 
-    @BeforeEach
-    void configurarRepositorio() {
-        when(usuarioRepository.existsByEmail(anyString())).thenReturn(false);
-        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(chamada -> chamada.getArgument(0));
-    }
-
     @Test
     void cadastroValido_deveSalvarComSenhaEmHashEIrParaOLogin() throws Exception {
-        cadastrar("Ana", "Ana@Exemplo.com", SENHA, SENHA)
+        cadastrar("Carla", "Carla@Exemplo.com", SENHA, SENHA)
                 .andExpect(redirectedUrl("/login?cadastrado"));
 
-        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
-        verify(usuarioRepository).save(captor.capture());
-        Usuario salvo = captor.getValue();
-        assertEquals("ana@exemplo.com", salvo.getEmail());
+        Usuario salvo = usuarios().findByEmail("carla@exemplo.com").orElseThrow();
         assertNotEquals(SENHA, salvo.getSenhaHash());
         assertTrue(codificador.matches(SENHA, salvo.getSenhaHash()));
+        assertTrue(salvo.recebeAvisos());
     }
 
     @Test
     void cadastroComEmailRepetido_deveMostrarMensagemENaoSalvar() throws Exception {
-        when(usuarioRepository.existsByEmail("ana@exemplo.com")).thenReturn(true);
+        int antes = usuarios().quantidade();
 
         cadastrar("Ana", "ana@exemplo.com", SENHA, SENHA)
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Já existe uma conta com este e-mail.")))
                 .andExpect(content().string(containsString("value=\"ana@exemplo.com\"")));
 
-        verify(usuarioRepository, never()).save(any());
+        assertEquals(antes, usuarios().quantidade());
     }
 
     @Test
     void cadastroComSenhaCurta_deveMostrarMensagemENaoSalvar() throws Exception {
-        cadastrar("Ana", "ana@exemplo.com", "curta12", "curta12")
+        cadastrar("Carla", "carla@exemplo.com", "curta12", "curta12")
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("A senha deve ter pelo menos 8 caracteres.")))
-                .andExpect(content().string(containsString("value=\"Ana\"")));
+                .andExpect(content().string(containsString("value=\"Carla\"")));
 
-        verify(usuarioRepository, never()).save(any());
+        assertFalse(usuarios().existsByEmail("carla@exemplo.com"));
     }
 
     @Test
     void cadastroComConfirmacaoDiferente_deveMostrarMensagemENaoSalvar() throws Exception {
-        cadastrar("Ana", "ana@exemplo.com", SENHA, "outra-senha-123")
+        cadastrar("Carla", "carla@exemplo.com", SENHA, "outra-senha-123")
                 .andExpect(content().string(containsString("A confirmação da senha não confere.")));
 
-        verify(usuarioRepository, never()).save(any());
+        assertFalse(usuarios().existsByEmail("carla@exemplo.com"));
     }
 
     private ResultActions cadastrar(String nome, String email, String senha, String confirmacao) throws Exception {

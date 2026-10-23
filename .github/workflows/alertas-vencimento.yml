@@ -1,0 +1,58 @@
+name: Alertas de vencimento
+
+on:
+  schedule:
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: alertas-vencimento
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      URL_APP: https://despensa-tcc.onrender.com
+    steps:
+      - name: Acordar o app no Render
+        run: |
+          for tentativa in 1 2 3 4 5 6 7 8; do
+            if curl --fail --silent --show-error --max-time 60 "$URL_APP/saude"; then
+              echo
+              echo "App no ar."
+              exit 0
+            fi
+            echo "Tentativa $tentativa: o app ainda não respondeu. Esperando 30 s..."
+            sleep 30
+          done
+          echo "O app não respondeu depois de várias tentativas."
+          exit 1
+
+      - name: Enviar os avisos por e-mail
+        env:
+          ALERTAS_TOKEN: ${{ secrets.ALERTAS_TOKEN }}
+        run: |
+          if [ -z "$ALERTAS_TOKEN" ]; then
+            echo "O secret ALERTAS_TOKEN não está configurado no repositório."
+            exit 1
+          fi
+          for tentativa in 1 2 3; do
+            status=$(curl --silent --show-error --max-time 120 --output resposta.json --write-out "%{http_code}" \
+              --request POST --header "X-Alertas-Token: $ALERTAS_TOKEN" "$URL_APP/tarefas/enviar-alertas" || echo "000")
+            echo "Tentativa $tentativa: HTTP $status"
+            cat resposta.json 2>/dev/null || true
+            echo
+            case "$status" in
+              200) echo "Avisos processados."; exit 0 ;;
+              409) echo "Já havia uma execução em andamento no app."; exit 0 ;;
+              401) echo "O app recusou o token. Confira se o ALERTAS_TOKEN é igual no GitHub e no Render."; exit 1 ;;
+              503) echo "O envio de e-mail não está configurado no app (BREVO_API_KEY / EMAIL_REMETENTE)."; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "Não foi possível disparar os avisos."
+          exit 1

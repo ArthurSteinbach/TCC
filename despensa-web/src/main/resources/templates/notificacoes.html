@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: pagina(~{::title}, ~{::main})}">
+<head>
+    <title>Notificações — Despensa</title>
+</head>
+<body>
+<main class="container py-3 pagina-formulario">
+    <h1 class="h4 mb-3">Notificações</h1>
+
+    <div class="alert alert-success" th:if="${sucesso}" th:text="${sucesso}" role="status">Mensagem de sucesso</div>
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}" role="alert">Mensagem de erro</div>
+    <div class="alert alert-warning" th:unless="${preferencias.envioConfigurado()}" id="envioNaoConfigurado">
+        O envio de e-mails ainda não está configurado no servidor. As preferências ficam guardadas, mas nenhum
+        e-mail é enviado por enquanto.
+    </div>
+
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-2">Avisos de vencimento por e-mail</h2>
+            <p class="text-secondary small mb-3">
+                Uma vez por dia, quando algum item entra nos 7 dias antes de vencer ou vence, enviamos um e-mail
+                com a lista.
+            </p>
+            <p class="mb-3" id="situacaoAvisos">
+                Situação:
+                <strong th:text="${preferencias.avisosAtivos()} ? 'ligados' : 'desligados'">ligados</strong>
+            </p>
+            <form th:action="@{/notificacoes/avisos}" method="post">
+                <input type="hidden" name="ativos" th:value="${!preferencias.avisosAtivos()}">
+                <button type="submit" class="btn btn-lg w-100"
+                        th:classappend="${preferencias.avisosAtivos()} ? 'btn-outline-danger' : 'btn-success'"
+                        th:text="${preferencias.avisosAtivos()} ? 'Desligar avisos por e-mail' : 'Ligar avisos por e-mail'">
+                    Desligar avisos por e-mail
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-2">E-mail que recebe os avisos</h2>
+            <p class="mb-1" id="emailDestino">
+                <strong th:text="${preferencias.emailDestino()}">voce@exemplo.com</strong>
+                <span class="text-secondary" th:if="${preferencias.usaEmailDaConta()}">(e-mail da sua conta)</span>
+            </p>
+
+            <div class="alert alert-info mt-3 mb-0" th:if="${preferencias.temPendente()}" id="emailPendente">
+                Aguardando confirmação de <strong th:text="${preferencias.emailPendente()}">novo@exemplo.com</strong>.
+                Abra o link que enviamos para ele até
+                <span th:text="${#temporals.format(preferencias.pendenteExpiraEm(), 'dd/MM/yyyy HH:mm')}">01/01/2026</span>.
+                Até lá, os avisos continuam indo para o e-mail acima.
+            </div>
+
+            <form th:action="@{/notificacoes/email}" method="post" class="mt-3">
+                <label for="email" class="form-label">Usar outro e-mail</label>
+                <input type="email" class="form-control form-control-lg mb-2" id="email" name="email"
+                       autocomplete="email" required>
+                <div class="form-text mb-2">Vamos enviar um link de confirmação para ele. O link vale por 24 horas.</div>
+                <button type="submit" class="btn btn-outline-success btn-lg w-100">Enviar link de confirmação</button>
+            </form>
+
+            <form th:action="@{/notificacoes/email/conta}" method="post" class="mt-2"
+                  th:unless="${preferencias.usaEmailDaConta() and !preferencias.temPendente()}">
+                <button type="submit" class="btn btn-link w-100"
+                        th:text="|Voltar a usar o e-mail da conta (${preferencias.emailConta()})|">
+                    Voltar a usar o e-mail da conta
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-2">Testar</h2>
+            <p class="text-secondary small mb-3">Envia um e-mail de exemplo para o endereço dos avisos.</p>
+            <form th:action="@{/notificacoes/teste}" method="post">
+                <button type="submit" class="btn btn-outline-secondary btn-lg w-100"
+                        th:disabled="${!preferencias.envioConfigurado()}">Enviar e-mail de teste</button>
+            </form>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -41,6 +41,10 @@ leitura do código de barras pela câmera do celular direto no navegador e publi
 - **Histórico:** tudo o que foi consumido ou descartado, com filtro e a opção de desfazer.
 - **Relatório:** total perdido, total consumido, total descartado e percentual de desperdício.
 - **Produtos:** edição de nome e categoria e exclusão de produtos sem lotes.
+- **Notificações:** avisos por e-mail dos itens que entram nos 7 dias antes de vencer e dos que vencem,
+  no máximo uma vez por dia. Na tela é possível ligar ou desligar os avisos, escolher outro e-mail (que só
+  passa a valer depois de confirmado por um link) e enviar um e-mail de teste. Todo aviso tem um link para
+  descadastrar.
 
 ## Tecnologias
 
@@ -51,6 +55,8 @@ leitura do código de barras pela câmera do celular direto no navegador e publi
 - MongoDB Atlas (banco de dados na nuvem)
 - ZXing (`@zxing/browser`) para ler códigos de barras EAN-13 pela câmera
 - API pública Open Food Facts para buscar nome e categoria dos produtos
+- API HTTP de e-mail transacional da Brevo para enviar os avisos, disparada uma vez por dia por um
+  workflow do GitHub Actions
 - JUnit 5, Mockito e Spring Security Test; os testes da lógica de câmera em JavaScript usam o executor de
   testes do Node.js
 - Docker e Render para a publicação com HTTPS
@@ -110,8 +116,8 @@ pasta.
 
 ## Testes
 
-Os testes não usam o MongoDB Atlas nem a internet: o banco é substituído por um repositório em memória e
-a Open Food Facts por respostas simuladas.
+Os testes não usam o MongoDB Atlas, a internet nem a Brevo: o banco é substituído por repositórios em
+memória, a Open Food Facts por respostas simuladas e o envio de e-mail por um enviador falso.
 
 ```powershell
 cd despensa-web
@@ -120,8 +126,8 @@ cd despensa-web
 
 | Projeto | Testes |
 |---|---|
-| `despensa-web`, com o Node.js instalado | 270 |
-| `despensa-web`, sem o Node.js | 253 (os 17 testes de JavaScript não rodam e não quebram o build) |
+| `despensa-web`, com o Node.js instalado | 329 |
+| `despensa-web`, sem o Node.js | 312 (os 17 testes de JavaScript não rodam e não quebram o build) |
 | `controle-despensa` | 51 |
 
 Os testes da lógica de escolha da câmera estão em `despensa-web/src/test/js` e rodam com o Node.js
@@ -146,11 +152,40 @@ Render compila o projeto, roda o `.jar` com a memória ajustada para o plano gra
 HTTPS. A variável `MONGODB_URI` é configurada no painel do Render, nunca no repositório. O endereço
 `/saude` responde `OK` quando o serviço está no ar e não mostra nenhum dado.
 
+## Avisos por e-mail
+
+Os avisos de vencimento são enviados pela API HTTP da [Brevo](https://www.brevo.com), porque o plano
+gratuito do Render bloqueia o envio por SMTP. Como o app "dorme" no plano gratuito, o disparo diário não
+fica dentro dele: o workflow [`.github/workflows/alertas-vencimento.yml`](.github/workflows/alertas-vencimento.yml)
+roda todo dia às 8h de Brasília (11h UTC), acorda o app e chama `POST /tarefas/enviar-alertas` com o
+cabeçalho `X-Alertas-Token`. Ele também pode ser rodado à mão na aba **Actions** do GitHub.
+
+Regras do envio:
+
+- No máximo um e-mail por pessoa por dia, e só quando há novidade: um item que entrou nos 7 dias antes de
+  vencer ou um item que venceu. Cada item é avisado uma vez em cada uma dessas situações.
+- Se a validade de um item for alterada, ele pode ser avisado de novo.
+- Se o envio falhar, nada é marcado como avisado e a próxima execução tenta de novo.
+
+Configuração, sempre por variáveis de ambiente (no Render) e nunca no código:
+
+| Variável | Para quê |
+|---|---|
+| `BREVO_API_KEY` | Chave da API da Brevo |
+| `EMAIL_REMETENTE` | E-mail remetente verificado na Brevo |
+| `EMAIL_REMETENTE_NOME` | Nome que aparece como remetente (opcional; o padrão é "Controle de Despensa") |
+| `ALERTAS_TOKEN` | Segredo que o workflow envia; o mesmo valor fica no secret `ALERTAS_TOKEN` do GitHub |
+| `URL_PUBLICA` | Endereço usado nos links dos e-mails (opcional; o padrão é o endereço publicado) |
+
+Sem `BREVO_API_KEY` e `EMAIL_REMETENTE`, o app funciona normalmente e só registra no log que o envio de
+e-mail está desligado. Sem `ALERTAS_TOKEN`, o endereço de disparo recusa todas as chamadas.
+
 ## Estrutura do repositório
 
 ```text
 .
 ├── controle-despensa/   versão desktop (Swing + SQLite) — histórico do TCC I
+├── .github/workflows/   disparo diário dos avisos por e-mail
 ├── despensa-web/        versão web atual (Spring Boot + MongoDB Atlas)
 │   ├── src/main/java/   código Java (camadas model, repository, service, web, config)
 │   ├── src/main/resources/templates/   páginas Thymeleaf
