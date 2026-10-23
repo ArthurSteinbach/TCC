@@ -126,8 +126,8 @@ cd despensa-web
 
 | Projeto | Testes |
 |---|---|
-| `despensa-web`, com o Node.js instalado | 329 |
-| `despensa-web`, sem o Node.js | 312 (os 17 testes de JavaScript não rodam e não quebram o build) |
+| `despensa-web`, com o Node.js instalado | 334 |
+| `despensa-web`, sem o Node.js | 317 (os 17 testes de JavaScript não rodam e não quebram o build) |
 | `controle-despensa` | 51 |
 
 Os testes da lógica de escolha da câmera estão em `despensa-web/src/test/js` e rodam com o Node.js
@@ -178,7 +178,9 @@ Configuração, sempre por variáveis de ambiente (no Render) e nunca no código
 | `URL_PUBLICA` | Endereço usado nos links dos e-mails (opcional; o padrão é o endereço publicado) |
 
 Sem `BREVO_API_KEY` e `EMAIL_REMETENTE`, o app funciona normalmente e só registra no log que o envio de
-e-mail está desligado. Sem `ALERTAS_TOKEN`, o endereço de disparo recusa todas as chamadas.
+e-mail está desligado. Sem `ALERTAS_TOKEN`, o endereço de disparo recusa todas as chamadas. Ao iniciar, o
+log mostra, para cada uma dessas variáveis, se ela foi encontrada e o tamanho do valor (nunca o valor), e
+avisa quando existe uma variável com nome parecido mas diferente.
 
 ## Estrutura do repositório
 
