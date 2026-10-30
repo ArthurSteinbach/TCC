@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,7 +55,7 @@ class AlertaVencimentoServiceTest {
         assertEquals(new ResultadoEnvioAlertas(2, 1, 0), resultado);
         MensagemEmail email = emails.ultima();
         assertEquals(EMAIL_ANA, email.destinatario());
-        assertEquals("Despensa: 1 item vencendo em breve", email.assunto());
+        assertEquals("Despensa: 1 item vencendo em breve (18/10)", email.assunto());
         assertTrue(email.html().contains("Vencendo em breve"));
         assertFalse(email.html().contains(">Vencidos<"));
         assertTrue(email.html().contains("Leite Integral"));
@@ -70,7 +71,7 @@ class AlertaVencimentoServiceTest {
         servico.executar();
 
         MensagemEmail email = emails.ultima();
-        assertEquals("Despensa: 1 item vencido", email.assunto());
+        assertEquals("Despensa: 1 item vencido (18/10)", email.assunto());
         assertTrue(email.html().contains(">Vencidos<"));
         assertTrue(email.html().contains("Venceu há 2 dias"));
         assertTrue(email.texto().contains("VENCIDOS"));
@@ -103,7 +104,7 @@ class AlertaVencimentoServiceTest {
 
         assertEquals(1, emails.enviadas().size());
         MensagemEmail email = emails.ultima();
-        assertEquals("Despensa: 2 itens vencidos e 2 itens vencendo em breve", email.assunto());
+        assertEquals("Despensa: 2 itens vencidos e 2 itens vencendo em breve (18/10)", email.assunto());
         assertTrue(email.html().indexOf(">Vencidos<") < email.html().indexOf("Vencendo em breve"));
         assertTrue(email.html().indexOf("Venceu há 4 dias") < email.html().indexOf("Venceu há 1 dia"));
         assertTrue(email.html().contains("Vence hoje") && email.html().contains("Vence amanhã"));
@@ -121,7 +122,8 @@ class AlertaVencimentoServiceTest {
         assertTrue(emails.enviadas().get(0).html().contains("Venceu há 1 dia<"));
         assertTrue(emails.enviadas().get(1).html().contains("Venceu há 2 dias"));
         assertTrue(emails.enviadas().get(2).html().contains("Venceu há 3 dias"));
-        assertTrue(emails.enviadas().stream().allMatch(email -> email.assunto().equals("Despensa: 1 item vencido")));
+        assertEquals(List.of("Despensa: 1 item vencido (18/10)", "Despensa: 1 item vencido (19/10)",
+                "Despensa: 1 item vencido (20/10)"), emails.enviadas().stream().map(MensagemEmail::assunto).toList());
     }
 
     @Test
@@ -140,7 +142,7 @@ class AlertaVencimentoServiceTest {
         assertTrue(dia1.html().contains("Vence hoje") && !dia1.html().contains(">Vencidos<"));
         assertTrue(dia2.html().contains(">Vencidos<") && dia2.html().contains("Venceu há 1 dia"));
         assertFalse(dia2.html().contains("Vencendo em breve"));
-        assertEquals("Despensa: 1 item vencido", dia2.assunto());
+        assertEquals("Despensa: 1 item vencido (20/10)", dia2.assunto());
     }
 
     @Test
@@ -159,7 +161,7 @@ class AlertaVencimentoServiceTest {
 
         MensagemEmail dia1 = emails.ultima();
         assertEquals(2, emails.enviadas().size());
-        assertEquals("Despensa: 1 item vencendo em breve", dia1.assunto());
+        assertEquals("Despensa: 1 item vencendo em breve (19/10)", dia1.assunto());
         assertTrue(dia1.html().contains("Queijo"));
         assertFalse(dia1.html().contains("Leite Integral"));
         assertFalse(dia1.html().contains("Iogurte"));
@@ -255,13 +257,14 @@ class AlertaVencimentoServiceTest {
         assertEquals(2, resultado.emailsEnviados());
         assertEquals(2, emails.enviadasPara(EMAIL_ANA).size());
         assertEquals(2, emails.enviadasPara(EMAIL_BRUNO).size());
+        assertEquals("Despensa: 1 item vencendo em breve (19/10)", emails.enviadasPara(EMAIL_ANA).get(1).assunto());
         for (MensagemEmail paraAna : emails.enviadasPara(EMAIL_ANA)) {
             assertTrue(paraAna.html().contains("Leite Integral") && !paraAna.html().contains("Café do Bruno"));
-            assertEquals("Despensa: 1 item vencendo em breve", paraAna.assunto());
+            assertTrue(paraAna.assunto().startsWith("Despensa: 1 item vencendo em breve ("));
         }
         for (MensagemEmail paraBruno : emails.enviadasPara(EMAIL_BRUNO)) {
             assertTrue(paraBruno.html().contains("Café do Bruno") && !paraBruno.html().contains("Leite Integral"));
-            assertEquals("Despensa: 1 item vencido e 1 item vencendo em breve", paraBruno.assunto());
+            assertTrue(paraBruno.assunto().startsWith("Despensa: 1 item vencido e 1 item vencendo em breve ("));
         }
     }
 

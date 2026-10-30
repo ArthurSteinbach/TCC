@@ -157,14 +157,16 @@ HTTPS. A variável `MONGODB_URI` é configurada no painel do Render, nunca no re
 Os avisos de vencimento são enviados pela API HTTP da [Brevo](https://www.brevo.com), porque o plano
 gratuito do Render bloqueia o envio por SMTP. Como o app "dorme" no plano gratuito, o disparo diário não
 fica dentro dele: o workflow [`.github/workflows/alertas-vencimento.yml`](.github/workflows/alertas-vencimento.yml)
-roda todo dia às 8h de Brasília (11h UTC), acorda o app e chama `POST /tarefas/enviar-alertas` com o
+é agendado para todo dia às 7h37 de Brasília (10h37 UTC; o GitHub costuma iniciar as execuções agendadas com
+algum atraso), acorda o app e chama `POST /tarefas/enviar-alertas` com o
 cabeçalho `X-Alertas-Token`. Ele também pode ser rodado à mão na aba **Actions** do GitHub.
 
 Regras do envio:
 
 - Todo dia, cada pessoa com os avisos ligados recebe um e-mail se tiver pelo menos um item vencido ou que
   vence nos próximos 7 dias. O assunto resume a situação, por exemplo "Despensa: 2 itens vencidos e 3
-  vencendo em breve".
+  itens vencendo em breve (30/10)". A data do dia no assunto faz cada dia chegar como um e-mail separado, sem
+  o Gmail juntar tudo numa conversa só.
 - A seção "Vencidos" lista todos os itens vencidos ("Venceu há 3 dias") e a seção "Vencendo em breve"
   lista os que vencem de hoje até daqui a 7 dias ("Vence hoje", "Vence amanhã", "Vence em 5 dias").
 - Um item continua aparecendo todos os dias até ser consumido, descartado ou ter a validade alterada para

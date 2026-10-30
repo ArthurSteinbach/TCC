@@ -113,7 +113,7 @@ public class AlertaVencimentoService {
         List<ItemAviso> vencidos = itens.stream().filter(ItemAviso::vencido).toList();
         List<ItemAviso> vencendo = itens.stream().filter(item -> !item.vencido()).toList();
         enviador.enviar(montador.alertas(destinatario.getNome(), destinatario.emailDeDestinoDosAvisos(), vencidos,
-                vencendo, destinatario.getTokenDescadastro()));
+                vencendo, destinatario.getTokenDescadastro(), hoje));
 
         destinatario.setUltimoEnvioAlertas(hoje);
         usuarioRepository.save(destinatario);

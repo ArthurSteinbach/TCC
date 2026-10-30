@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
 public class MontadorDeEmails {
 
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DIA_E_MES = DateTimeFormatter.ofPattern("dd/MM");
     private static final DateTimeFormatter DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm");
 
     private final String urlPublica;
@@ -22,8 +24,8 @@ public class MontadorDeEmails {
     }
 
     public MensagemEmail alertas(String nome, String destinatario, List<ItemAviso> vencidos, List<ItemAviso> vencendo,
-                                 String tokenDescadastro) {
-        String assunto = "Despensa: " + resumo(vencidos.size(), vencendo.size());
+                                 String tokenDescadastro, LocalDate dia) {
+        String assunto = "Despensa: " + resumo(vencidos.size(), vencendo.size()) + " (" + dia.format(DIA_E_MES) + ")";
         StringBuilder html = new StringBuilder(cabecalhoHtml(nome));
         StringBuilder texto = new StringBuilder("Olá, " + nome + "!\n\n");
 
