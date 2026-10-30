@@ -358,35 +358,6 @@ class LoteServiceTest {
     }
 
     @Test
-    void editarAValidade_deveZerarOsAvisosEnviadosDoLote() {
-        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 10.0, HOJE.plusDays(2));
-        marcarAvisos(lote);
-
-        loteService.editar(USUARIO, produtoDeTeste.getId(), lote.getId(), 1, 10.0, HOJE.plusDays(9));
-
-        Lote editado = ambiente.lote(USUARIO, produtoDeTeste, lote.getId());
-        assertNull(editado.getAvisoVencendoEm());
-        assertNull(editado.getAvisoVencidoEm());
-    }
-
-    @Test
-    void editarSemMudarAValidade_deveManterOsAvisos() {
-        Lote lote = loteService.cadastrar(USUARIO, produtoDeTeste.getId(), 1, 10.0, HOJE.plusDays(2));
-        marcarAvisos(lote);
-
-        loteService.editar(USUARIO, produtoDeTeste.getId(), lote.getId(), 3, 12.0, HOJE.plusDays(2));
-
-        assertNotNull(ambiente.lote(USUARIO, produtoDeTeste, lote.getId()).getAvisoVencendoEm());
-    }
-
-    private void marcarAvisos(Lote lote) {
-        Produto produto = ambiente.recarregar(USUARIO, produtoDeTeste);
-        produto.buscarLote(lote.getId()).orElseThrow().setAvisoVencendoEm(AGORA);
-        produto.buscarLote(lote.getId()).orElseThrow().setAvisoVencidoEm(AGORA);
-        repositorio.save(produto);
-    }
-
-    @Test
     void cadastrarPorValidade_deveCriarUmLotePorDataComAQuantidadeDeCadaUma() {
         Map<LocalDate, Integer> quantidadePorValidade = new LinkedHashMap<>();
         quantidadePorValidade.put(HOJE.plusDays(20), 3);

@@ -4,29 +4,23 @@ import br.com.unisinos.despensa.email.EnviadorDeEmail;
 import br.com.unisinos.despensa.email.FalhaNoEnvioException;
 import br.com.unisinos.despensa.email.ItemAviso;
 import br.com.unisinos.despensa.email.MontadorDeEmails;
-import br.com.unisinos.despensa.exception.ValidacaoException;
 import br.com.unisinos.despensa.model.Lote;
 import br.com.unisinos.despensa.model.Produto;
 import br.com.unisinos.despensa.model.ResultadoEnvioAlertas;
 import br.com.unisinos.despensa.model.Usuario;
-import br.com.unisinos.despensa.repository.ProdutoRepository;
 import br.com.unisinos.despensa.repository.UsuarioRepository;
 import br.com.unisinos.despensa.util.Constantes;
 import br.com.unisinos.despensa.util.Tokens;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,18 +31,15 @@ public class AlertaVencimentoService {
 
     private final UsuarioRepository usuarioRepository;
     private final ProdutoService produtoService;
-    private final ProdutoRepository produtoRepository;
     private final EnviadorDeEmail enviador;
     private final MontadorDeEmails montador;
     private final Clock relogio;
     private final AtomicBoolean emExecucao = new AtomicBoolean();
 
     public AlertaVencimentoService(UsuarioRepository usuarioRepository, ProdutoService produtoService,
-                                   ProdutoRepository produtoRepository, EnviadorDeEmail enviador,
-                                   MontadorDeEmails montador, Clock relogio) {
+                                   EnviadorDeEmail enviador, MontadorDeEmails montador, Clock relogio) {
         this.usuarioRepository = usuarioRepository;
         this.produtoService = produtoService;
-        this.produtoRepository = produtoRepository;
         this.enviador = enviador;
         this.montador = montador;
         this.relogio = relogio;
@@ -65,22 +56,14 @@ public class AlertaVencimentoService {
         }
     }
 
-    public List<ItemAviso> novidades(String usuarioId) {
-        LocalDate hoje = LocalDate.now(relogio);
+    private List<ItemAviso> itensQuePrecisamDeAtencao(String usuarioId, LocalDate hoje) {
         LocalDate limite = hoje.plusDays(Constantes.DIAS_ALERTA_VENCIMENTO);
         List<ItemAviso> itens = new ArrayList<>();
         for (Produto produto : produtoService.listar(usuarioId)) {
             for (Lote lote : produto.getLotes()) {
-                if (!lote.isAtivo()) {
-                    continue;
-                }
-                boolean vencido = lote.isVencidoEm(hoje);
-                boolean novoVencido = vencido && lote.getAvisoVencidoEm() == null;
-                boolean novoVencendo = !vencido && !lote.getDataValidade().isAfter(limite)
-                        && lote.getAvisoVencendoEm() == null;
-                if (novoVencido || novoVencendo) {
-                    itens.add(new ItemAviso(produto.getId(), lote.getId(), produto.getNome(), lote.getQuantidade(),
-                            lote.getDataValidade(), ChronoUnit.DAYS.between(hoje, lote.getDataValidade())));
+                if (lote.isAtivo() && !lote.getDataValidade().isAfter(limite)) {
+                    itens.add(new ItemAviso(produto.getNome(), lote.getQuantidade(), lote.getDataValidade(),
+                            ChronoUnit.DAYS.between(hoje, lote.getDataValidade())));
                 }
             }
         }
@@ -116,8 +99,8 @@ public class AlertaVencimentoService {
         if (!usuario.recebeAvisos() || hoje.equals(usuario.getUltimoEnvioAlertas())) {
             return false;
         }
-        List<ItemAviso> novidades = novidades(usuario.getId());
-        if (novidades.isEmpty()) {
+        List<ItemAviso> itens = itensQuePrecisamDeAtencao(usuario.getId(), hoje);
+        if (itens.isEmpty()) {
             return false;
         }
 
@@ -127,42 +110,13 @@ public class AlertaVencimentoService {
             destinatario = usuarioRepository.save(destinatario);
         }
 
-        List<ItemAviso> vencidos = novidades.stream().filter(ItemAviso::vencido).toList();
-        List<ItemAviso> vencendo = novidades.stream().filter(item -> !item.vencido()).toList();
+        List<ItemAviso> vencidos = itens.stream().filter(ItemAviso::vencido).toList();
+        List<ItemAviso> vencendo = itens.stream().filter(item -> !item.vencido()).toList();
         enviador.enviar(montador.alertas(destinatario.getNome(), destinatario.emailDeDestinoDosAvisos(), vencidos,
                 vencendo, destinatario.getTokenDescadastro()));
 
-        marcarComoAvisados(destinatario.getId(), novidades);
         destinatario.setUltimoEnvioAlertas(hoje);
         usuarioRepository.save(destinatario);
         return true;
-    }
-
-    private void marcarComoAvisados(String usuarioId, List<ItemAviso> itens) {
-        LocalDateTime agora = LocalDateTime.now(relogio);
-        Map<String, List<ItemAviso>> porProduto = new LinkedHashMap<>();
-        for (ItemAviso item : itens) {
-            porProduto.computeIfAbsent(item.produtoId(), id -> new ArrayList<>()).add(item);
-        }
-        for (Map.Entry<String, List<ItemAviso>> entrada : porProduto.entrySet()) {
-            try {
-                Produto produto = produtoService.buscarPorId(usuarioId, entrada.getKey());
-                for (ItemAviso item : entrada.getValue()) {
-                    produto.buscarLote(item.loteId())
-                            .filter(Lote::isAtivo)
-                            .filter(lote -> lote.getDataValidade().equals(item.dataValidade()))
-                            .ifPresent(lote -> {
-                                if (item.vencido()) {
-                                    lote.setAvisoVencidoEm(agora);
-                                } else {
-                                    lote.setAvisoVencendoEm(agora);
-                                }
-                            });
-                }
-                produtoRepository.save(produto);
-            } catch (ValidacaoException | OptimisticLockingFailureException e) {
-                LOG.warn("Não foi possível marcar os avisos do produto {}: {}", entrada.getKey(), e.getMessage());
-            }
-        }
     }
 }

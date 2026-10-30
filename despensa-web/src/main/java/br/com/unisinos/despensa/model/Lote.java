@@ -12,8 +12,6 @@ public class Lote {
     private LocalDateTime dataCadastro;
     private StatusLote status;
     private LocalDateTime dataBaixa;
-    private LocalDateTime avisoVencendoEm;
-    private LocalDateTime avisoVencidoEm;
 
     public Lote() {
     }
@@ -82,27 +80,6 @@ public class Lote {
 
     public void setDataBaixa(LocalDateTime dataBaixa) {
         this.dataBaixa = dataBaixa;
-    }
-
-    public LocalDateTime getAvisoVencendoEm() {
-        return avisoVencendoEm;
-    }
-
-    public void setAvisoVencendoEm(LocalDateTime avisoVencendoEm) {
-        this.avisoVencendoEm = avisoVencendoEm;
-    }
-
-    public LocalDateTime getAvisoVencidoEm() {
-        return avisoVencidoEm;
-    }
-
-    public void setAvisoVencidoEm(LocalDateTime avisoVencidoEm) {
-        this.avisoVencidoEm = avisoVencidoEm;
-    }
-
-    public void zerarAvisos() {
-        avisoVencendoEm = null;
-        avisoVencidoEm = null;
     }
 
     public boolean isAtivo() {

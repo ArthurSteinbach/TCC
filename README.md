@@ -41,8 +41,8 @@ leitura do código de barras pela câmera do celular direto no navegador e publi
 - **Histórico:** tudo o que foi consumido ou descartado, com filtro e a opção de desfazer.
 - **Relatório:** total perdido, total consumido, total descartado e percentual de desperdício.
 - **Produtos:** edição de nome e categoria e exclusão de produtos sem lotes.
-- **Notificações:** avisos por e-mail dos itens que entram nos 7 dias antes de vencer e dos que vencem,
-  no máximo uma vez por dia. Na tela é possível ligar ou desligar os avisos, escolher outro e-mail (que só
+- **Notificações:** enquanto houver itens vencidos ou vencendo em até 7 dias, um e-mail por dia com a
+  lista. Na tela é possível ligar ou desligar os avisos, escolher outro e-mail (que só
   passa a valer depois de confirmado por um link) e enviar um e-mail de teste. Todo aviso tem um link para
   descadastrar.
 
@@ -162,10 +162,15 @@ cabeçalho `X-Alertas-Token`. Ele também pode ser rodado à mão na aba **Actio
 
 Regras do envio:
 
-- No máximo um e-mail por pessoa por dia, e só quando há novidade: um item que entrou nos 7 dias antes de
-  vencer ou um item que venceu. Cada item é avisado uma vez em cada uma dessas situações.
-- Se a validade de um item for alterada, ele pode ser avisado de novo.
-- Se o envio falhar, nada é marcado como avisado e a próxima execução tenta de novo.
+- Todo dia, cada pessoa com os avisos ligados recebe um e-mail se tiver pelo menos um item vencido ou que
+  vence nos próximos 7 dias. O assunto resume a situação, por exemplo "Despensa: 2 itens vencidos e 3
+  vencendo em breve".
+- A seção "Vencidos" lista todos os itens vencidos ("Venceu há 3 dias") e a seção "Vencendo em breve"
+  lista os que vencem de hoje até daqui a 7 dias ("Vence hoje", "Vence amanhã", "Vence em 5 dias").
+- Um item continua aparecendo todos os dias até ser consumido, descartado ou ter a validade alterada para
+  fora dessa situação. Sem nenhum item assim, nenhum e-mail é enviado.
+- No máximo um e-mail por pessoa por dia: se o disparo for chamado de novo no mesmo dia, ele não repete.
+- Se o envio falhar, o dia não é marcado e uma nova chamada no mesmo dia tenta de novo.
 
 Configuração, sempre por variáveis de ambiente (no Render) e nunca no código:
 

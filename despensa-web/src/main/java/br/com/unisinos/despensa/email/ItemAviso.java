@@ -2,8 +2,7 @@ package br.com.unisinos.despensa.email;
 
 import java.time.LocalDate;
 
-public record ItemAviso(String produtoId, String loteId, String nomeProduto, double quantidade,
-                        LocalDate dataValidade, long diasParaVencer) {
+public record ItemAviso(String nomeProduto, double quantidade, LocalDate dataValidade, long diasParaVencer) {
 
     public boolean vencido() {
         return diasParaVencer < 0;

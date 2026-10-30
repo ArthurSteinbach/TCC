@@ -30,6 +30,8 @@ class NotificacoesWebTest extends TesteWebBase {
         mockMvc.perform(get("/notificacoes").with(user(ANA)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Situação:")))
+                .andExpect(content().string(containsString("Enquanto houver itens vencidos ou vencendo em até 7 dias, "
+                        + "enviamos um e-mail por dia com a lista.")))
                 .andExpect(content().string(containsString("<strong>ligados</strong>")))
                 .andExpect(content().string(containsString("ana@exemplo.com")))
                 .andExpect(content().string(containsString("(e-mail da sua conta)")))
