@@ -69,6 +69,22 @@ class TarefasWebTest extends TesteWebBase {
     }
 
     @Test
+    void terceiraChamadaNoMesmoDia_tambemNaoDeveReenviar() throws Exception {
+        mockMvc.perform(post("/tarefas/enviar-alertas").header(CABECALHO, TOKEN))
+                .andExpect(jsonPath("$.emailsEnviados").value(1));
+        mockMvc.perform(post("/tarefas/enviar-alertas").header(CABECALHO, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailsEnviados").value(0))
+                .andExpect(jsonPath("$.falhas").value(0));
+        mockMvc.perform(post("/tarefas/enviar-alertas").header(CABECALHO, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailsEnviados").value(0))
+                .andExpect(jsonPath("$.falhas").value(0));
+
+        assertEquals(1, emails().enviadas().size());
+    }
+
+    @Test
     void envioDeEmailDesligado_deveResponder503() throws Exception {
         emails().desligar();
 

@@ -213,6 +213,20 @@ class AlertaVencimentoServiceTest {
     }
 
     @Test
+    void chamadasDeReservaNoMesmoDia_devemEnviarSoParaQuemAindaNaoRecebeu() {
+        ambiente.loteService.cadastrar(USUARIO, leite.getId(), 1, 4.0, HOJE.plusDays(2));
+        assertEquals(1, servico.executar().orElseThrow().emailsEnviados());
+
+        Produto cafe = ambiente.produtoService.cadastrar(OUTRO_USUARIO, "333", "Café do Bruno", null);
+        ambiente.loteService.cadastrar(OUTRO_USUARIO, cafe.getId(), 1, 20.0, HOJE.plusDays(4));
+        assertEquals(1, servico.executar().orElseThrow().emailsEnviados());
+
+        assertEquals(new ResultadoEnvioAlertas(2, 0, 0), servico.executar().orElseThrow());
+        assertEquals(1, emails.enviadasPara(EMAIL_ANA).size());
+        assertEquals(1, emails.enviadasPara(EMAIL_BRUNO).size());
+    }
+
+    @Test
     void falhaNoEnvio_devePermitirTentarDeNovoNoMesmoDia() {
         ambiente.loteService.cadastrar(USUARIO, leite.getId(), 1, 4.0, HOJE.plusDays(2));
         emails.falharEnvios(true);

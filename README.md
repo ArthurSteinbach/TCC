@@ -126,8 +126,8 @@ cd despensa-web
 
 | Projeto | Testes |
 |---|---|
-| `despensa-web`, com o Node.js instalado | 334 |
-| `despensa-web`, sem o Node.js | 317 (os 17 testes de JavaScript não rodam e não quebram o build) |
+| `despensa-web`, com o Node.js instalado | 336 |
+| `despensa-web`, sem o Node.js | 319 (os 17 testes de JavaScript não rodam e não quebram o build) |
 | `controle-despensa` | 51 |
 
 Os testes da lógica de escolha da câmera estão em `despensa-web/src/test/js` e rodam com o Node.js
@@ -157,8 +157,9 @@ HTTPS. A variável `MONGODB_URI` é configurada no painel do Render, nunca no re
 Os avisos de vencimento são enviados pela API HTTP da [Brevo](https://www.brevo.com), porque o plano
 gratuito do Render bloqueia o envio por SMTP. Como o app "dorme" no plano gratuito, o disparo diário não
 fica dentro dele: o workflow [`.github/workflows/alertas-vencimento.yml`](.github/workflows/alertas-vencimento.yml)
-é agendado para todo dia às 7h37 de Brasília (10h37 UTC; o GitHub costuma iniciar as execuções agendadas com
-algum atraso), acorda o app e chama `POST /tarefas/enviar-alertas` com o
+é agendado para todo dia às 7h37 de Brasília (10h37 UTC), com dois horários de reserva às 12h37 e às 18h37
+(15h37 e 21h37 UTC), porque o GitHub pode atrasar muito ou pular uma execução agendada. Os horários extras
+não geram e-mail repetido: quem já recebeu no dia não recebe de novo, e a resposta vem com `emailsEnviados: 0`. O workflow acorda o app e chama `POST /tarefas/enviar-alertas` com o
 cabeçalho `X-Alertas-Token`. Ele também pode ser rodado à mão na aba **Actions** do GitHub.
 
 Regras do envio:
