@@ -20,7 +20,7 @@ independentes:
 
 | Pasta | Versão | Situação |
 |---|---|---|
-| [`controle-despensa/`](controle-despensa) | Primeira versão: aplicativo **desktop** (Java Swing + SQLite), desenvolvida no TCC I | Mantida como histórico, sem alterações |
+| [`controle-despensa/`](controle-despensa) | Primeira versão: aplicativo **desktop** (Java Swing + SQLite) | Mantida como histórico, sem alterações |
 | [`despensa-web/`](despensa-web) | Versão atual: aplicação **web responsiva**, pensada primeiro para o celular | Em uso e publicada |
 
 A versão web reaproveita as regras de negócio da versão desktop e acrescenta login com várias contas,
@@ -57,7 +57,7 @@ leitura do código de barras pela câmera do celular direto no navegador e publi
 - API pública Open Food Facts para buscar nome e categoria dos produtos
 - API HTTP de e-mail transacional da Brevo para enviar os avisos, disparada uma vez por dia por um
   workflow do GitHub Actions
-- JUnit 5, Mockito e Spring Security Test; os testes da lógica de câmera em JavaScript usam o executor de
+- JUnit 6, Mockito e Spring Security Test; os testes da lógica de câmera em JavaScript usam o executor de
   testes do Node.js
 - Docker e Render para a publicação com HTTPS
 
@@ -159,7 +159,7 @@ gratuito do Render bloqueia o envio por SMTP. Como o app "dorme" no plano gratui
 fica dentro dele: o workflow [`.github/workflows/alertas-vencimento.yml`](.github/workflows/alertas-vencimento.yml)
 é agendado para todo dia às 7h37 de Brasília (10h37 UTC), com dois horários de reserva às 12h37 e às 18h37
 (15h37 e 21h37 UTC), porque o GitHub pode atrasar muito ou pular uma execução agendada. Os horários extras
-não geram e-mail repetido: quem já recebeu no dia não recebe de novo, e a resposta vem com `emailsEnviados: 0`. O workflow acorda o app e chama `POST /tarefas/enviar-alertas` com o
+normalmente não geram e-mail repetido: quem já recebeu no dia não recebe de novo, e a resposta vem com `emailsEnviados: 0`. O workflow acorda o app e chama `POST /tarefas/enviar-alertas` com o
 cabeçalho `X-Alertas-Token`. Ele também pode ser rodado à mão na aba **Actions** do GitHub.
 
 Regras do envio:
@@ -194,7 +194,7 @@ avisa quando existe uma variável com nome parecido mas diferente.
 
 ```text
 .
-├── controle-despensa/   versão desktop (Swing + SQLite) — histórico do TCC I
+├── controle-despensa/   versão desktop (Swing + SQLite)
 ├── .github/workflows/   disparo diário dos avisos por e-mail
 ├── despensa-web/        versão web atual (Spring Boot + MongoDB Atlas)
 │   ├── src/main/java/   código Java (camadas model, repository, service, web, config)
