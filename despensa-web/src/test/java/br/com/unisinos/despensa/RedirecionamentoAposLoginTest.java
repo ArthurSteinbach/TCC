@@ -10,6 +10,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.net.http.HttpResponse;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,6 +91,35 @@ class RedirecionamentoAposLoginTest {
 
     @Test
     void loginSemTerTentadoAbrirNada_deveAbrirADespensa() throws Exception {
+        assertEquals("/", navegador.entrar(EMAIL, SENHA));
+    }
+
+    @Test
+    void loginEnviadoDuasVezesComOMesmoToken_segundoEnvioDeveAbrirADespensa() throws Exception {
+        String token = navegador.tokenDoLogin();
+        HttpResponse<String> primeiro = navegador.enviarLogin(EMAIL, SENHA, token);
+        assertEquals(302, primeiro.statusCode());
+        assertEquals("/", navegador.destino(primeiro));
+
+        HttpResponse<String> segundo = navegador.enviarLogin(EMAIL, SENHA, token);
+
+        assertEquals(302, segundo.statusCode());
+        assertEquals("/", navegador.destino(segundo));
+        assertTrue(navegador.abrir("/pagina-que-nao-existe").body().contains(">Sair<"));
+    }
+
+    @Test
+    void loginComTokenDeUmaSessaoQueNaoExisteMais_deveVoltarAoLoginAvisandoQueASessaoExpirou() throws Exception {
+        String token = navegador.tokenDoLogin();
+        navegador.trocarSessaoPorUmaQueNaoExisteMais();
+
+        HttpResponse<String> resposta = navegador.enviarLogin(EMAIL, SENHA, token);
+
+        assertEquals(302, resposta.statusCode());
+        assertEquals("/login?expirou", navegador.destino(resposta));
+        HttpResponse<String> login = navegador.abrir("/login?expirou");
+        assertEquals(200, login.statusCode());
+        assertTrue(login.body().contains("Sua sessão expirou. Entre de novo."));
         assertEquals("/", navegador.entrar(EMAIL, SENHA));
     }
 }

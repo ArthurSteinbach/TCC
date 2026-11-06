@@ -126,8 +126,8 @@ cd despensa-web
 
 | Projeto | Testes |
 |---|---|
-| `despensa-web`, com o Node.js instalado | 336 |
-| `despensa-web`, sem o Node.js | 319 (os 17 testes de JavaScript não rodam e não quebram o build) |
+| `despensa-web`, com o Node.js instalado | 347 |
+| `despensa-web`, sem o Node.js | 330 (os 17 testes de JavaScript não rodam e não quebram o build) |
 | `controle-despensa` | 51 |
 
 Os testes da lógica de escolha da câmera estão em `despensa-web/src/test/js` e rodam com o Node.js

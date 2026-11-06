@@ -15,8 +15,9 @@
     </div>
     <div class="alert alert-success" th:if="${param.cadastrado}">Conta criada! Entre com seu e-mail e senha.</div>
     <div class="alert alert-info" th:if="${param.saiu}">Você saiu da sua conta.</div>
+    <div class="alert alert-warning" th:if="${param.expirou}">Sua sessão expirou. Entre de novo.</div>
 
-    <form th:action="@{/login}" method="post">
+    <form th:action="@{/login}" method="post" data-envio-unico="Entrando...">
         <div class="mb-3">
             <label for="email" class="form-label">E-mail</label>
             <input type="email" id="email" name="email" class="form-control form-control-lg"

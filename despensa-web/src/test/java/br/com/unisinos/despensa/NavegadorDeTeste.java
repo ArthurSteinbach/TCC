@@ -2,6 +2,7 @@ package br.com.unisinos.despensa;
 
 import java.io.IOException;
 import java.net.CookieManager;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -17,8 +18,9 @@ final class NavegadorDeTeste {
     private static final String ACEITA_HTML = "text/html,application/xhtml+xml,*/*;q=0.8";
 
     private final int porta;
+    private final CookieManager cookies = new CookieManager();
     private final HttpClient cliente = HttpClient.newBuilder()
-            .cookieHandler(new CookieManager())
+            .cookieHandler(cookies)
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
@@ -46,15 +48,35 @@ final class NavegadorDeTeste {
     }
 
     String entrar(String email, String senha) throws IOException, InterruptedException {
+        HttpResponse<String> resposta = enviarLogin(email, senha, tokenDoLogin());
+        if (resposta.statusCode() != 302) {
+            throw new IllegalStateException("Login devolveu HTTP " + resposta.statusCode());
+        }
+        return destino(resposta);
+    }
+
+    String tokenDoLogin() throws IOException, InterruptedException {
         Matcher token = TOKEN_CSRF.matcher(abrir("/login").body());
         if (!token.find()) {
             throw new IllegalStateException("Página de login sem token CSRF");
         }
-        HttpResponse<String> resposta = enviarFormulario("/login",
-                "email=" + codificar(email) + "&senha=" + codificar(senha) + "&_csrf=" + codificar(token.group(1)));
-        if (resposta.statusCode() != 302) {
-            throw new IllegalStateException("Login devolveu HTTP " + resposta.statusCode());
-        }
+        return token.group(1);
+    }
+
+    HttpResponse<String> enviarLogin(String email, String senha, String token) throws IOException, InterruptedException {
+        return enviarFormulario("/login",
+                "email=" + codificar(email) + "&senha=" + codificar(senha) + "&_csrf=" + codificar(token));
+    }
+
+    void trocarSessaoPorUmaQueNaoExisteMais() {
+        cookies.getCookieStore().removeAll();
+        HttpCookie sessao = new HttpCookie("JSESSIONID", "SESSAO-DE-ANTES-DO-SERVIDOR-REINICIAR");
+        sessao.setPath("/");
+        sessao.setVersion(0);
+        cookies.getCookieStore().add(endereco("/"), sessao);
+    }
+
+    String destino(HttpResponse<?> resposta) {
         return resposta.headers().firstValue("Location").orElseThrow().replace("http://localhost:" + porta, "");
     }
 

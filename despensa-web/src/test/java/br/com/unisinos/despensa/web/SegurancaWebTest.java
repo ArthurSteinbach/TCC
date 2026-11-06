@@ -16,6 +16,8 @@ import static org.springframework.security.test.web.servlet.response.SecurityMoc
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,6 +116,49 @@ class SegurancaWebTest extends TesteWebBase {
     void paginaDeLogin_paraQuemJaEstaLogado_deveIrParaADespensa() throws Exception {
         mockMvc.perform(get("/login").with(user(ANA)))
                 .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
+    void loginComTokenInvalido_deQuemJaEstaLogado_deveIrParaADespensa() throws Exception {
+        mockMvc.perform(post("/login").param("email", "ana@exemplo.com").param("senha", SENHA)
+                        .with(user(ANA)).with(csrf().useInvalidToken()))
+                .andExpect(redirectedUrl("/"))
+                .andExpect(authenticated().withUsername("ana@exemplo.com"));
+    }
+
+    @Test
+    void loginComTokenInvalido_semEstarLogado_deveVoltarAoLoginSemAutenticar() throws Exception {
+        cadastrarAnaNoRepositorio();
+
+        mockMvc.perform(post("/login").param("email", "ana@exemplo.com").param("senha", SENHA)
+                        .with(csrf().useInvalidToken()))
+                .andExpect(redirectedUrl("/login?expirou"))
+                .andExpect(unauthenticated());
+    }
+
+    @Test
+    void loginSemToken_semEstarLogado_deveVoltarAoLoginSemAutenticar() throws Exception {
+        cadastrarAnaNoRepositorio();
+
+        mockMvc.perform(post("/login").param("email", "ana@exemplo.com").param("senha", SENHA))
+                .andExpect(redirectedUrl("/login?expirou"))
+                .andExpect(unauthenticated());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/logout", "/usuarios/novo", "/cadastrar", "/consumir", "/notificacoes/avisos"})
+    void tokenInvalidoForaDoLogin_deveContinuarRecusado(String caminho) throws Exception {
+        mockMvc.perform(post(caminho).with(user(ANA)).with(csrf().useInvalidToken()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void paginaDeLogin_deveAvisarQueASessaoExpirouETravarOSegundoEnvio() throws Exception {
+        mockMvc.perform(get("/login").param("expirou", ""))
+                .andExpect(content().string(containsString("Sua sessão expirou. Entre de novo.")))
+                .andExpect(content().string(containsString("data-envio-unico=\"Entrando...\"")));
+        mockMvc.perform(get("/js/app.js"))
+                .andExpect(content().string(containsString("data-envio-unico")));
     }
 
     private void cadastrarAnaNoRepositorio() {
